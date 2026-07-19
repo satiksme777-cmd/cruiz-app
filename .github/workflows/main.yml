@@ -16,15 +16,24 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: 20
+        node-version: 22
 
-    - name: Install Dependencies
+    - name: Initialize Project and Install Capacitor
       run: |
-        npm install
+        if [ ! -f package.json ]; then
+          npm init -y
+        fi
+        npm install @capacitor/core@6.0.0 @capacitor/cli@6.0.0 @capacitor/android@6.0.0
 
-    - name: Initialize Capacitor Android
+    - name: Initialize Capacitor Config
       run: |
-        npx cap android add
+        if [ ! -f capacitor.config.json ]; then
+          echo '{"appId": "lv.cruiz.app", "appName": "Cruiz", "webDir": "."}' > capacitor.config.json
+        fi
+
+    - name: Add Android Platform
+      run: |
+        npx cap android add || true
         npx cap sync android
 
     - name: Setup Java JDK
