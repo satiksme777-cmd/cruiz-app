@@ -1,0 +1,22 @@
+{
+  "short_name": "Cruiz",
+  "name": "Cruiz - Soundtrack Your Drive",
+  "description": "Soundtrack Your Drive - Exclusive Club",
+  "icons": [
+    {
+      "src": "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=192",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=512",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/index.html",
+  "background_color": "#08090d",
+  "theme_color": "#00f2fe",
+  "display": "standalone",
+  "orientation": "portrait"
+}

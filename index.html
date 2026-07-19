@@ -1,0 +1,3358 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+    <title>Cruiz - Sound Locked Inferno Edition</title>
+    <!-- Cloudinary Widget -->
+    <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <style>
+        :root {
+            --bg-color: #05070c;
+            /* Liquid Glass Bāze */
+            --panel-bg: rgba(17, 22, 37, 0.45);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --glass-blur: blur(20px);
+            
+            --neon-blue: #00f2fe;
+            --neon-cyan: #4facfe;
+            --neon-pink: #ff007f;
+            --neon-purple: #a855f7;
+            --neon-orange: #ff5e00;
+            --neon-green: #39ff14;
+            --text-color: #a2b2cd;
+            --text-light: #ffffff;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --smooth-transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-family);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background: radial-gradient(circle at 50% 0%, #101626 0%, #05070c 100%);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* Full responsive screen layout */
+        .app-container {
+            width: 100%;
+            max-width: 410px;
+            height: 840px;
+            background: rgba(10, 13, 22, 0.7);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-radius: 40px;
+            border: 6px solid #1a2030;
+            box-shadow: 0 0 50px rgba(0, 242, 254, 0.1), inset 0 0 20px rgba(0,0,0,0.6);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Canvas for Seasonal Effects */
+        #seasonal-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* Ambient Audio Wave Visualizer */
+        #visualizer-canvas {
+            position: absolute;
+            top: 60px;
+            left: 0;
+            width: 100%;
+            height: 260px;
+            pointer-events: none;
+            z-index: 2;
+            opacity: .6;
+        }
+
+        /* 🔮 Siri/Alexa Cosmic Wave Overlay Background (Tavas bildes neona violetā aura) */
+        .ai-wave-glow-layer {
+            position: absolute;
+            top: 240px; left: 0; width: 100%; height: 220px;
+            background: radial-gradient(ellipse at center, rgba(168, 85, 247, 0.22) 0%, rgba(0, 242, 254, 0.04) 55%, rgba(0,0,0,0) 100%);
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            filter: blur(15px);
+        }
+        .ai-wave-glow-layer.active {
+            opacity: 1;
+            transform: scale(1.15);
+            animation: cosmicWaveMotion 4.5s infinite ease-in-out;
+        }
+
+        @keyframes cosmicWaveMotion {
+            0%, 100% { transform: scale(1.15) translateY(0px) rotate(0deg); filter: hue-rotate(0deg) blur(15px); }
+            50% { transform: scale(1.2) translateY(-8px) rotate(3deg); filter: hue-rotate(25deg) blur(20px); }
+        }
+
+        /* Top Notch/Dynamic Island Simulator */
+        .phone-notch {
+            width: 130px;
+            height: 25px;
+            background: #000;
+            border-radius: 0 0 15px 15px;
+            margin: 0 auto;
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+        }
+
+        /* Offline Toast Notification */
+        .offline-toast {
+            position: absolute;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #ff4d4d;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            z-index: 10000;
+            transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .offline-toast.show {
+            top: 35px;
+        }
+
+        /* Full Screen Overlay for Block Screens */
+        .block-screen-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #1b0a1a 0%, #08030b 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            text-align: center;
+            padding: 30px;
+            transition: var(--smooth-transition);
+        }
+
+        .block-screen-overlay.hidden {
+            display: none !important;
+        }
+
+        .block-icon {
+            font-size: 50px;
+            color: var(--neon-pink);
+            text-shadow: 0 0 15px var(--neon-pink);
+            margin-bottom: 20px;
+            animation: pulse-block 1.5s infinite alternate;
+        }
+
+        @keyframes pulse-block {
+            to { transform: scale(1.1); filter: drop-shadow(0 0 25px var(--neon-pink)); }
+        }
+
+        .block-title {
+            color: var(--text-light);
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .block-msg-box {
+            color: var(--text-color);
+            font-size: 13px;
+            line-height: 1.6;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 0, 127, 0.2);
+            padding: 15px;
+            border-radius: 15px;
+            width: 100%;
+        }
+
+        /* Screens Setup */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 40px 16px 85px 16px;
+            transition: var(--smooth-transition);
+            opacity: 0;
+            transform: scale(0.96) translateY(10px);
+            pointer-events: none;
+            z-index: 1;
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+
+        .screen::-webkit-scrollbar {
+            display: none;
+        }
+
+        .screen.active {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            pointer-events: auto;
+            z-index: 10;
+        }
+
+        /* LOGIN SCREEN WITH CLEAN PIN PAD */
+        #login-screen {
+            background: linear-gradient(145deg, #05070c 0%, #120a1c 100%);
+            justify-content: space-between;
+            padding-top: 60px;
+            padding-bottom: 40px;
+        }
+
+        .logo-area {
+            text-align: center;
+        }
+
+        .logo-title {
+            font-size: 46px;
+            font-weight: 900;
+            color: var(--text-light);
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            text-shadow: 0 0 12px var(--neon-blue), 0 0 25px rgba(0, 242, 254, 0.3);
+            margin-bottom: 5px;
+        }
+
+        .logo-subtitle {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: #55637f;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 25px;
+            padding: 25px 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        .login-card h3 {
+            color: var(--text-light);
+            margin-bottom: 15px;
+            font-weight: 600;
+            font-size: 14px;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        /* Pin Dots */
+        .pin-dots {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            justify-content: center;
+        }
+
+        .pin-dot {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transition: var(--smooth-transition);
+        }
+
+        .pin-dot.filled {
+            background-color: var(--neon-blue);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        /* iOS-like Keypad Grid */
+        .pin-keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            width: 100%;
+            max-width: 260px;
+            margin-bottom: 10px;
+        }
+
+        .pin-key {
+            aspect-ratio: 1;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(5px);
+            color: var(--text-light);
+            font-size: 22px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+        }
+
+        .pin-key:active {
+            background: rgba(255, 255, 255, 0.12);
+            transform: scale(0.9);
+        }
+
+        .pin-key.action-key {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        .invite-notice {
+            font-size: 11px;
+            text-align: center;
+            color: #526385;
+            margin-top: 15px;
+            line-height: 1.4;
+        }
+
+        .invite-notice a {
+            color: var(--neon-blue);
+            text-decoration: none;
+        }
+
+        /* INTRO SCREEN */
+        #intro-screen {
+            background: #05070c;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .avatar-holder {
+            width: 115px;
+            height: 115px;
+            border-radius: 50%;
+            border: 3px solid var(--neon-blue);
+            padding: 5px;
+            box-shadow: 0 0 25px rgba(0, 242, 254, 0.35);
+            animation: pulse-avatar 2s infinite ease-in-out;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        .avatar-holder img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .welcome-text {
+            font-size: 24px;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .welcome-subtitle {
+            font-size: 13px;
+            color: #526385;
+        }
+
+        @keyframes pulse-avatar {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* NAVIGATION HEADER */
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 8px;
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: var(--glass-blur);
+            border-radius: 16px;
+            border: 1px solid var(--panel-border);
+            margin-bottom: 10px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 2px solid var(--neon-blue);
+            object-fit: cover;
+        }
+
+        .points-badge {
+            background: linear-gradient(135deg, #ffaa00, var(--neon-orange));
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 4px 12px rgba(255, 94, 0, 0.25);
+            transition: var(--smooth-transition);
+        }
+
+        /* DYNAMIC VERSION STYLING & NET INDICATOR */
+        .cruiz-logo-header {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .cruiz-header-title {
+            font-size: 18px;
+            font-weight: 900;
+            color: var(--text-light);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+        .cruiz-meta-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: -1px;
+        }
+        .cruiz-header-version {
+            font-size: 9px;
+            color: #6a7c9d;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+        .net-speed-indicator {
+            font-size: 9px;
+            font-weight: 800;
+            color: var(--neon-green);
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .net-dot {
+            width: 5px;
+            height: 5px;
+            background-color: var(--neon-green);
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 6px var(--neon-green);
+        }
+
+        /* STANDALONE PTS HISTORY DESIGN */
+        .pts-history-section {
+            background: var(--panel-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--panel-border);
+            border-radius: 20px;
+            padding: 15px;
+            margin-top: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .pts-history-section-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--neon-orange);
+            margin-bottom: 12px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 8px;
+        }
+
+        .pts-history-items-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 420px;
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+
+        .pts-history-items-list::-webkit-scrollbar {
+            display: none;
+        }
+
+        .pts-history-card-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 12px 14px;
+            border-radius: 12px;
+            font-size: 13px;
+            border-left: 4px solid transparent;
+        }
+
+        .pts-history-card-item.plus {
+            border-left-color: var(--neon-green);
+        }
+
+        .pts-history-card-item.minus {
+            border-left-color: var(--neon-pink);
+        }
+
+        .pts-history-item-reason {
+            color: var(--text-light);
+            font-weight: 600;
+        }
+
+        .pts-history-item-val {
+            font-weight: bold;
+        }
+        .pts-history-card-item.plus .pts-history-item-val { color: var(--neon-green); }
+        .pts-history-card-item.minus .pts-history-item-val { color: var(--neon-pink); }
+
+        .pts-support-footer {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 11px;
+            color: #526385;
+            line-height: 1.4;
+            border-top: 1px dashed rgba(255,255,255,0.05);
+            padding-top: 10px;
+        }
+
+        /* PLAYER SCREEN SPECIFICS */
+        .search-container {
+            margin-top: 5px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 11px 15px 11px 35px;
+            border-radius: 14px;
+            border: 1px solid var(--panel-border);
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            color: var(--text-light);
+            font-size: 12px;
+            outline: none;
+            transition: var(--smooth-transition);
+        }
+
+        .search-bar:focus {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.15);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #526385;
+            font-size: 13px;
+        }
+
+        .vinyl-container {
+            display: flex;
+            justify-content: center;
+            margin: 5px 0;
+            position: relative;
+        }
+
+        .vinyl {
+            width: 105px;
+            height: 105px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #2d303a 10%, #0c0d12 40%, #000 100%);
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            animation: spin 8s linear infinite;
+            animation-play-state: paused;
+            transition: var(--smooth-transition);
+            z-index: 10;
+        }
+
+        .vinyl.playing {
+            animation-play-state: running;
+        }
+
+        .vinyl-center {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-size: cover;
+            background-position: center;
+            border: 1.5px solid #000;
+        }
+
+        .song-details {
+            text-align: center;
+            margin-bottom: 6px;
+        }
+
+        .song-title {
+            color: var(--text-light);
+            font-size: 16px;
+            font-weight: 800;
+            margin-bottom: 2px;
+        }
+
+        .song-artist {
+            color: #5e6b85;
+            font-size: 11px;
+        }
+
+        /* ⏭️ HUD INDICATOR FOR NEXT TRACK PLAYLIST QUEUE */
+        .next-track-hud {
+            font-size: 10.5px;
+            color: var(--neon-cyan);
+            text-align: center;
+            margin-bottom: 6px;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            opacity: 0.85;
+        }
+
+        /* Audio Duration Track Progress Bar */
+        .audio-progress-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 2px 5px;
+            margin-bottom: 4px;
+            font-size: 11px;
+            color: #5e6b85;
+        }
+
+        .audio-progress-container input[type=range] {
+            flex: 1;
+        }
+
+        /* 📱 SWIPE/SLIDER CAROUSEL CONTROL CENTER HUB SURFACE */
+        .controls-carousel-container {
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+            border-radius: 20px;
+            margin-bottom: 12px;
+            background: var(--panel-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: box-shadow 0.4s ease, border-color 0.4s ease;
+            cursor: grab;
+        }
+        .controls-carousel-container:active {
+            cursor: grabbing;
+        }
+
+        /* NEUZKRĪTOŠS ŪDENS VIĻŅU EFFECT AI REŽĪMĀ */
+        .controls-carousel-container.ai-water-glow {
+            border-color: rgba(0, 242, 254, 0.25);
+            animation: gentleWaterWaves 3.5s infinite ease-in-out;
+        }
+
+        @keyframes gentleWaterWaves {
+            0% { box-shadow: 0 10px 30px rgba(0,0,0,0.3), 0 0 15px rgba(0, 242, 254, 0.08); }
+            50% { box-shadow: 0 10px 30px rgba(0,0,0,0.3), 0 0 25px rgba(0, 242, 254, 0.15), 0 0 40px rgba(79, 172, 254, 0.05); }
+            100% { box-shadow: 0 10px 30px rgba(0,0,0,0.3), 0 0 15px rgba(0, 242, 254, 0.08); }
+        }
+
+        .controls-track {
+            display: flex;
+            width: 200%; /* Divi slaidi */
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            will-change: transform;
+        }
+
+        .control-slide {
+            width: 50%;
+            padding: 14px 14px 8px 14px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Carousel indicator dots */
+        .carousel-dots {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            padding-bottom: 8px;
+            background: transparent;
+        }
+
+        .carousel-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: var(--smooth-transition);
+        }
+
+        .carousel-dot.active {
+            background: var(--neon-blue);
+            box-shadow: 0 0 6px var(--neon-blue);
+            width: 14px;
+            border-radius: 3px;
+        }
+
+        .slider-row {
+            margin-bottom: 10px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            margin-bottom: 5px;
+        }
+
+        .slider-label .val {
+            color: var(--neon-blue);
+        }
+
+        .slider-wrapper {
+            display: flex;
+            align-items: center;
+        }
+
+        input[type=range].custom-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.08);
+            height: 6px;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        input[type=range].custom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: var(--text-light);
+            border: 2px solid var(--neon-blue);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--neon-blue);
+            transition: transform 0.1s;
+        }
+        input[type=range].custom-slider::-webkit-slider-thumb:active {
+            transform: scale(1.2);
+        }
+
+        /* Smart Audio Switch Toggle Layout & Pro modules */
+        .smart-audio-toggle-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.2);
+            padding: 8px 10px;
+            border-radius: 12px;
+            margin-top: 6px;
+            border: 1px solid rgba(255,255,255,0.04);
+        }
+        .smart-label-box { display: flex; flex-direction: column; }
+        .smart-title-txt { font-size: 10px; font-weight: bold; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; }
+        .smart-desc-txt { font-size: 9px; color: var(--text-color); margin-top: 1px; }
+
+        .smart-ai-select {
+            background: #090b11;
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 4px 6px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: bold;
+            outline: none;
+            color: var(--neon-cyan);
+            cursor: pointer;
+        }
+
+        .ios-switch {
+            position: relative; inline-size: 38px; block-size: 20px;
+            -webkit-appearance: none; appearance: none; background: rgba(255,255,255,0.1);
+            border-radius: 15px; outline: none; cursor: pointer; transition: 0.3s;
+        }
+        .ios-switch:checked { background: linear-gradient(90deg, var(--neon-blue), var(--neon-cyan)); box-shadow: 0 0 8px rgba(0,242,254,0.4); }
+        .ios-switch::before {
+            content: ''; position: absolute; inline-size: 16px; block-size: 16px;
+            border-radius: 50%; top: 2px; left: 2px; background: #fff; transition: 0.3s;
+        }
+        .ios-switch:checked::before { transform: translateX(18px); }
+
+        /* Bass Warning */
+        .bass-warning-box {
+            background: rgba(255, 0, 127, 0.1);
+            border: 1px solid var(--neon-pink);
+            color: var(--neon-pink);
+            padding: 5px;
+            border-radius: 8px;
+            font-size: 9px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 6px;
+            animation: warning-pulse 1s infinite alternate;
+        }
+        @keyframes warning-pulse {
+            from { opacity: 0.7; }
+            to { opacity: 1; filter: drop-shadow(0 0 5px rgba(255, 0, 127, 0.4)); }
+        }
+
+        .player-buttons {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .btn-circle {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--panel-border);
+            backdrop-filter: blur(10px);
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 14px;
+            transition: var(--smooth-transition);
+        }
+
+        .btn-circle:hover {
+            transform: scale(1.05);
+            border-color: var(--neon-blue);
+        }
+
+        .btn-circle:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-circle.active {
+            border-color: var(--neon-orange);
+            color: var(--neon-orange);
+            box-shadow: 0 0 10px rgba(255,94,0,0.2);
+        }
+
+        .btn-play {
+            width: 54px;
+            height: 54px;
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-cyan));
+            color: #03070d;
+            border: none;
+            font-size: 18px;
+            box-shadow: 0 5px 15px rgba(0, 242, 254, 0.35);
+        }
+
+        .track-list-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #617395;
+            margin-bottom: 8px;
+            padding-left: 5px;
+            border-top: 1px dashed rgba(255,255,255,0.06);
+            padding-top: 10px;
+        }
+
+        /* Song Items Glass Layout */
+        .track-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: var(--glass-blur);
+            border-radius: 14px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            border: 1px solid var(--panel-border);
+            cursor: pointer;
+            transition: var(--smooth-transition);
+        }
+
+        .track-item.locked {
+            opacity: 0.45;
+        }
+
+        .track-item.active {
+            border-color: var(--neon-blue);
+            background: rgba(0, 242, 254, 0.06);
+            box-shadow: 0 4px 15px rgba(0, 242, 254, 0.08);
+        }
+
+        .track-item:hover:not(.locked) {
+            transform: translateY(-2px);
+            border-color: rgba(0, 242, 254, 0.4);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .track-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .fav-star {
+            color: #414c63;
+            font-size: 18px;
+            cursor: pointer;
+            transition: color 0.2s, transform 0.2s;
+        }
+
+        .fav-star.active {
+            color: var(--neon-orange);
+            text-shadow: 0 0 5px var(--neon-orange);
+        }
+
+        .track-meta-details {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            width: 100%;
+        }
+
+        .track-title-text {
+            color: var(--text-light);
+            font-size: 13px;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .track-artist-text {
+            color: #6c7e9d;
+            font-size: 11px;
+        }
+
+        .track-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .track-cost-badge {
+            font-size: 10px;
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.3);
+            color: #ffaa00;
+            white-space: nowrap;
+        }
+
+        .track-cost-badge.unlocked {
+            background: rgba(0, 242, 254, 0.1);
+            color: var(--neon-blue);
+        }
+
+        .track-status-text {
+            color: var(--neon-pink);
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        /* 🎰 DYNAMIC MULTI-STAGE CASINO HIGH STAKES DESIGN HUB */
+        .slot-machine-wrapper {
+            background: rgba(18, 12, 34, 0.6);
+            border: 2px solid var(--neon-purple);
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+            border-radius: 24px;
+            padding: 20px;
+            margin: 15px auto;
+            text-align: center;
+            transition: all 0.4s ease;
+        }
+
+        /* 🔴 DYNAMIC NEON BURN ANIMATIONS FOR STAGE 2 AND 3 */
+        .slot-machine-wrapper.burn-stage2 {
+            border-color: var(--neon-orange) !important;
+            animation: neon-burn-medium 0.8s infinite alternate ease-in-out;
+        }
+        .slot-machine-wrapper.burn-stage3 {
+            border-color: #ff0000 !important;
+            animation: neon-burn-extreme 0.4s infinite alternate ease-in-out;
+        }
+
+        @keyframes neon-burn-medium {
+            from { box-shadow: 0 0 15px rgba(255, 94, 0, 0.4), inset 0 0 10px rgba(255, 94, 0, 0.2); }
+            to { box-shadow: 0 0 30px rgba(255, 94, 0, 0.7), inset 0 0 20px rgba(255, 94, 0, 0.4); }
+        }
+        @keyframes neon-burn-extreme {
+            from { box-shadow: 0 0 25px #ff0000, 0 0 40px var(--neon-pink), inset 0 0 15px #ff0000; filter: saturate(1.2); }
+            to { box-shadow: 0 0 45px #ff0000, 0 0 65px var(--neon-pink), inset 0 0 30px #ff0000; filter: saturate(1.5); }
+        }
+
+        .slots-window {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            background: #000;
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 15px;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.9);
+            overflow: hidden;
+        }
+
+        .slot-reel {
+            width: 75px;
+            height: 75px;
+            background: linear-gradient(180deg, #111 0%, #222 50%, #111 100%);
+            border-radius: 12px;
+            font-size: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255,255,255,0.06);
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255,255,255,0.4);
+        }
+
+        /* 🎡 REAL DYNAMIC INTERACTIVE VISUAL RISK WHEEL FRAME */
+        .visual-risk-wheel-container {
+            position: relative;
+            width: 190px;
+            height: 190px;
+            margin: 15px auto;
+            border-radius: 50%;
+            border: 6px solid var(--neon-orange);
+            box-shadow: 0 0 20px rgba(255, 94, 0, 0.4);
+            overflow: hidden;
+            background: #0d061a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .risk-wheel-disc {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            transition: transform 3.5s cubic-bezier(0.1, 0.8, 0.1, 1);
+        }
+
+        .risk-wheel-sector {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            transform-origin: 100% 100%;
+            left: 0;
+            top: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+        }
+
+        .risk-wheel-sector-label {
+            position: absolute;
+            transform: rotate(22.5deg) translateY(-50px);
+            text-align: center;
+            width: 50px;
+            font-size: 9px;
+            font-weight: 900;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+        }
+
+        /* Wheel Sector Rotations for 8 elements */
+        .sec-rot-0 { transform: rotate(0deg); background: #3b1660; }
+        .sec-rot-1 { transform: rotate(45deg); background: #1c0a2d; }
+        .sec-rot-2 { transform: rotate(90deg); background: #960f3d; }
+        .sec-rot-3 { transform: rotate(135deg); background: #1c0a2d; }
+        .sec-rot-4 { transform: rotate(180deg); background: #3b1660; }
+        .sec-rot-5 { transform: rotate(225deg); background: #1c0a2d; }
+        .sec-rot-6 { transform: rotate(270deg); background: #d65108; }
+        .sec-rot-7 { transform: rotate(315deg); background: #1c0a2d; }
+
+        .risk-wheel-pin-indicator {
+            position: absolute;
+            top: 0px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0; height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 16px solid #fff;
+            z-index: 99;
+            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));
+        }
+
+        .casino-stage-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+        }
+        .badge-stage1 { background: rgba(168, 85, 247, 0.2); color: var(--neon-purple); border: 1px solid var(--neon-purple); }
+        .badge-stage2 { background: rgba(255, 94, 0, 0.2); color: var(--neon-orange); border: 1px solid var(--neon-orange); }
+        .badge-stage3 { background: rgba(255, 0, 127, 0.2); color: var(--neon-pink); border: 1px solid var(--neon-pink); }
+
+        .btn-casino-action {
+            background: linear-gradient(135deg, var(--neon-purple), var(--neon-pink));
+            color: white; border: none; font-weight: 800; border-radius: 12px;
+            padding: 13px 24px; font-size: 14px; cursor: pointer; width: 100%;
+            box-shadow: 0 4px 15px rgba(255, 0, 127, 0.3);
+            text-transform: uppercase; letter-spacing: 1px;
+            transition: var(--smooth-transition);
+        }
+        .btn-casino-action:active { transform: scale(0.97); }
+        .btn-casino-action:disabled { background: #231b30; color: #534c61; box-shadow: none; cursor: not-allowed; }
+
+        .btn-risk-stop {
+            background: linear-gradient(135deg, #444, #222);
+            color: #bbb; margin-top: 8px; font-size: 11px; padding: 7px;
+        }
+
+        /* Casino Header */
+        .casino-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .casino-title {
+            color: #fff;
+            font-size: 22px;
+            font-weight: 800;
+            text-shadow: 0 0 12px var(--neon-pink);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .casino-subtitle {
+            font-size: 11px;
+            color: #6d748c;
+            margin-top: 4px;
+        }
+
+        /* NEWS SCREEN & CLAIMS */
+        .news-card {
+            background: var(--panel-bg);
+            backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--panel-border);
+            border-radius: 20px;
+            padding: 15px;
+            margin-bottom: 15px;
+            position: relative;
+            animation: cardSlideIn 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+        }
+
+        @keyframes cardSlideIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .news-time {
+            font-size: 10px;
+            color: #526385;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .news-author-tag {
+            font-size: 10px;
+            color: var(--neon-blue);
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: block;
+            letter-spacing: 0.5px;
+        }
+
+        .news-headline {
+            color: var(--text-light);
+            font-size: 15px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            padding-right: 50px;
+        }
+
+        .news-body {
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--text-color);
+        }
+
+        .news-img {
+            width: 100%;
+            border-radius: 12px;
+            margin-top: 10px;
+            object-fit: cover;
+            max-height: 150px;
+        }
+
+        .news-admin-actions {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-news-action {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: var(--smooth-transition);
+        }
+        .btn-news-action:hover {
+            background: var(--neon-blue);
+            color: #000;
+            border-color: var(--neon-blue);
+        }
+        .btn-news-action.btn-delete:hover {
+            background: var(--neon-pink);
+            color: #fff;
+            border-color: var(--neon-pink);
+        }
+
+        .gift-claim-box {
+            margin-top: 12px;
+            padding: 10px;
+            background: rgba(57, 255, 20, 0.05);
+            border: 1.5px dashed var(--neon-green);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .btn-claim {
+            padding: 6px 14px;
+            background: var(--neon-green);
+            color: #000;
+            font-weight: bold;
+            font-size: 11px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: var(--smooth-transition);
+        }
+
+        .btn-claim:hover {
+            box-shadow: 0 0 10px var(--neon-green);
+            transform: translateY(-1px);
+        }
+
+        .btn-claim:disabled {
+            background: #223c1d;
+            color: #647560;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        /* LIVE STATUS LIGHT BULBS */
+        .status-bulb {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+        .status-bulb.online {
+            background-color: var(--neon-green);
+            box-shadow: 0 0 8px var(--neon-green);
+        }
+        .status-bulb.offline {
+            background-color: var(--neon-pink);
+            box-shadow: 0 0 8px var(--neon-pink);
+        }
+
+        /* ADVANCED ADMIN PANEL WITH STYLE */
+        .admin-section-title {
+            font-size: 13px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--neon-blue);
+            margin: 25px 0 12px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-left: 3px solid var(--neon-blue);
+            padding-left: 10px;
+        }
+
+        .admin-section-title.pink-sec {
+            color: var(--neon-pink);
+            border-left-color: var(--neon-pink);
+        }
+
+        .admin-section-title.orange-sec {
+            color: var(--neon-orange);
+            border-left-color: var(--neon-orange);
+        }
+
+        .admin-card {
+            background: rgba(17, 20, 32, 0.6);
+            backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--panel-border);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .admin-input-group {
+            margin-bottom: 12px;
+        }
+
+        .admin-input-group label {
+            display: block;
+            font-size: 10px;
+            text-transform: uppercase;
+            font-weight: bold;
+            color: #526385;
+            margin-bottom: 6px;
+        }
+
+        .admin-input, .admin-select, .admin-textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: #090b11;
+            color: var(--text-light);
+            font-size: 13px;
+            outline: none;
+            transition: var(--smooth-transition);
+        }
+
+        .admin-input:focus, .admin-select:focus, .admin-textarea:focus {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.15);
+        }
+
+        .admin-checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #fff;
+            font-size: 13px;
+        }
+
+        .admin-user-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 8px;
+        }
+
+        .admin-user-title {
+            color: #fff;
+            font-weight: bold;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+        }
+
+        .admin-control-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.15);
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+
+        .admin-track-manager-cell {
+            flex: 1; min-width: 0; padding-right: 10px;
+        }
+
+        .admin-pts-input {
+            width: 55px;
+            padding: 6px;
+            background: #000;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #ffaa00;
+            font-weight: bold;
+            border-radius: 8px;
+            text-align: center;
+            margin-right: 5px;
+        }
+
+        .admin-fav-list-holder {
+            margin-top: 8px;
+            padding: 8px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            font-size: 11px;
+        }
+        .admin-fav-track-bullet {
+            color: #fff;
+            padding: 2px 0;
+            display: block;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+        }
+
+        /* BUTTONS SETUP */
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-cyan));
+            color: #03070d;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            transition: var(--smooth-transition);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.4);
+            transform: translateY(-1px);
+        }
+
+        /* BOTTOM NAV BAR */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 65px;
+            background: rgba(10, 13, 22, 0.85);
+            backdrop-filter: var(--glass-blur);
+            border-top: 1px solid var(--panel-border);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+            border-bottom-left-radius: 34px;
+            border-bottom-right-radius: 34px;
+            padding: 0 10px;
+        }
+
+        .nav-tab {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #55668a;
+            cursor: pointer;
+            transition: var(--smooth-transition);
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            gap: 4px;
+            position: relative;
+        }
+
+        .nav-tab.active {
+            color: var(--neon-blue);
+        }
+
+        .nav-tab svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+            transition: var(--smooth-transition);
+        }
+
+        .nav-tab.active svg {
+            transform: translateY(-2px);
+            filter: drop-shadow(0 0 5px rgba(0, 242, 254, 0.5));
+        }
+
+        .blocked-badge {
+            position: absolute;
+            top: -5px;
+            right: 15px;
+            background: var(--neon-pink);
+            color: white;
+            font-size: 9px;
+            font-weight: bold;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 5px var(--neon-pink);
+        }
+
+        .unread-dot {
+            position: absolute;
+            top: -2px;
+            right: 2px;
+            width: 8px;
+            height: 8px;
+            background: var(--neon-pink);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--neon-pink);
+            display: none;
+        }
+
+        /* 💬 ENHANCED NOTIFICATION TOAST SYSTEM */
+        .toast {
+            position: absolute;
+            bottom: 85px;
+            left: 15px;
+            right: 15px;
+            background: rgba(10, 14, 26, 0.95);
+            backdrop-filter: var(--glass-blur);
+            border: 2px solid rgba(255, 255, 255, 0.12);
+            color: #fff;
+            padding: 16px 20px;
+            border-radius: 18px;
+            font-size: 14px;
+            font-weight: 700;
+            z-index: 99999;
+            transform: translateY(120px);
+            opacity: 0;
+            transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6), 0 0 20px rgba(0, 242, 254, 0.15);
+        }
+
+        .toast id="toast-icon" {
+            font-size: 20px;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Interactive Canvas layer for Seasonal Filters -->
+        <canvas id="seasonal-canvas"></canvas>
+        <!-- Canvas Backing for Audio Waves -->
+        <canvas id="visualizer-canvas"></canvas>
+
+        <!-- 🔮 Siri-Like Cosmic Particle Wave Effect Layer (Tavas bildes neona violetais vilnis) -->
+        <div class="ai-wave-glow-layer" id="cosmic-ai-wave-backdrop"></div>
+
+        <!-- Phone Notch decoration -->
+        <div class="phone-notch"></div>
+
+        <!-- Offline notification toast -->
+        <div id="offline-toast" class="offline-toast">
+            <span>⚠️</span> Nav savienojuma. Strādājam bezsaistē.
+        </div>
+
+        <!-- GLOBAL APP BLOCK SCREEN (FULL PAGE COVER) -->
+        <div id="block-screen" class="block-screen-overlay hidden">
+            <div class="block-icon">🚫</div>
+            <div class="block-title" id="block-title-text">Cruiz Slēgts</div>
+            <div class="block-msg-box" id="block-message">Cruiz pašlaik nav pieejams. Lūdzu, mēģiniet vēlāk!</div>
+        </div>
+
+        <!-- 1. LOGIN SCREEN WITH CLEAN PIN PAD -->
+        <div class="screen active" id="login-screen">
+            <div class="logo-area">
+                <div class="logo-title">Cruiz</div>
+                <div class="logo-subtitle">Soundtrack Your Drive</div>
+            </div>
+
+            <div class="login-card">
+                <h3>Ievadi Pieejas Kodu</h3>
+
+                <!-- PIN indicator dots -->
+                <div class="pin-dots" id="pin-dots">
+                    <div class="pin-dot"></div>
+                    <div class="pin-dot"></div>
+                    <div class="pin-dot"></div>
+                    <div class="pin-dot"></div>
+                    <div class="pin-dot"></div>
+                    <div class="pin-dot"></div>
+                </div>
+
+                <!-- Custom iOS-like Keypad -->
+                <div class="pin-keypad">
+                    <button class="pin-key" onclick="pressPinKey('1')">1</button>
+                    <button class="pin-key" onclick="pressPinKey('2')">2</button>
+                    <button class="pin-key" onclick="pressPinKey('3')">3</button>
+                    <button class="pin-key" onclick="pressPinKey('4')">4</button>
+                    <button class="pin-key" onclick="pressPinKey('5')">5</button>
+                    <button class="pin-key" onclick="pressPinKey('6')">6</button>
+                    <button class="pin-key" onclick="pressPinKey('7')">7</button>
+                    <button class="pin-key" onclick="pressPinKey('8')">8</button>
+                    <button class="pin-key" onclick="pressPinKey('9')">9</button>
+                    <button class="pin-key action-key" onclick="clearPin()">C</button>
+                    <button class="pin-key" onclick="pressPinKey('0')">0</button>
+                    <button class="pin-key action-key" onclick="deletePinKey()">⌫</button>
+                </div>
+
+                <div class="invite-notice">
+                    Slēgts piekļuves klubs.<br>Pieprasījumi e-pastā: <a href="mailto:info@cruiz.lv">info@cruiz.lv</a>
+                </div>
+            </div>
+            <div></div> <!-- balance spacer -->
+        </div>
+
+        <!-- 2. INTRO/WELCOME SCREEN (SMOOTH ANIMATION) -->
+        <div class="screen" id="intro-screen">
+            <div class="avatar-holder">
+                <img src="" id="user-pic-intro" alt="User Pic">
+            </div>
+            <div class="welcome-text">
+                Sveiks, <span class="welcome-name" id="user-name-intro">Lietotāj</span>
+            </div>
+            <div class="welcome-subtitle">Uzlādējam zemfrekvences...</div>
+        </div>
+
+        <!-- 3. MUSIC PLAYER SCREEN -->
+        <div class="screen" id="player-screen">
+            <div class="app-header">
+                <div class="header-left">
+                    <img class="header-avatar" src="" id="header-pic">
+                    <div class="cruiz-logo-header">
+                        <span class="cruiz-header-title">Cruiz</span>
+                        <div class="cruiz-meta-row">
+                            <span class="cruiz-header-version" id="app-display-version">v1.00</span>
+                            <span class="net-speed-indicator"><span class="net-dot" id="net-indicator-dot"></span><span id="net-speed-text">12 Mbps</span></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="points-badge">
+                    <span id="user-points">0</span> PTS
+                </div>
+            </div>
+
+            <!-- Vinyl Player Visualizer -->
+            <div class="vinyl-container">
+                <div class="vinyl" id="player-vinyl">
+                    <div class="vinyl-center" id="player-vinyl-cover" style="background-image: url('https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=256');"></div>
+                </div>
+            </div>
+
+            <div class="song-details">
+                <div class="song-title" id="player-title">Nav dziesmas</div>
+                <div class="song-artist" id="player-artist">Nav izpildītāja</div>
+            </div>
+
+            <!-- ⏭️ HUD NEUZKRĪTOŠS INDIKATORS: KAS SKANĒS NĀKOŠAIS -->
+            <div class="next-track-hud" id="next-track-preview-hud">Nākamā: Bibliotēka tukša</div>
+
+            <!-- Music Player Duration Slider & Timer -->
+            <div class="audio-progress-container">
+                <span id="track-current-time">0:00</span>
+                <input type="range" class="custom-slider" id="track-progress-bar" value="0" min="0" max="100" oninput="handleTrackSliderInput()" onchange="handleTrackSliderChange()">
+                <span id="track-total-duration">0:00</span>
+            </div>
+
+            <!-- PLAYBACK CONTROLS ARE NOW PLACED DIRECTLY UNDER DURATION BAR -->
+            <div class="player-buttons">
+                <button class="btn-circle" onclick="playPrevSong()">⏮</button>
+                <button class="btn-circle btn-play" id="play-btn" onclick="togglePlayState()">▶</button>
+                <button class="btn-circle" onclick="playNextSong()">⏭</button>
+                <button class="btn-circle" id="repeat-btn" onclick="toggleRepeatMode()">🔁</button>
+            </div>
+
+            <!-- 📱 FULL PANEL TOUCH SWIPE CAROUSEL ENGINE (Pārslēdzas pavelkot uz jebkuru pusi) -->
+            <div class="controls-carousel-container" id="main-controls-glass-panel"
+                 touchstart="handleCarouselTouchStart(event)" touchmove="handleCarouselTouchMove(event)" touchend="handleCarouselTouchEnd()">
+                <div class="controls-track" id="carousel-track">
+                    
+                    <!-- DAĻA 1: Galvenie Audio iestatījumi -->
+                    <div class="control-slide">
+                        <!-- Dynamic Bass Warning -->
+                        <div id="bass-warning-alert" class="bass-warning-box hidden">
+                            ⚠️ UZMANĪBU: Liels bass boost var bojāt skaļruņus!
+                        </div>
+
+                        <!-- Bass Slider -->
+                        <div class="slider-row bass-slider-row">
+                            <div class="slider-label">
+                                <span>Bass Boost (Web Audio)</span>
+                                <span class="val" id="bass-val">Lvl 3</span>
+                            </div>
+                            <div class="slider-wrapper">
+                                <input type="range" class="custom-slider" id="slider-bass" min="1" max="10" value="3" oninput="updateBass(this.value)">
+                            </div>
+                        </div>
+
+                        <!-- Volume Slider -->
+                        <div class="slider-row">
+                            <div class="slider-label">
+                                <span>Skaļums</span>
+                                <span class="val" id="vol-val">80%</span>
+                            </div>
+                            <div class="slider-wrapper">
+                                <input type="range" class="custom-slider" id="slider-vol" min="0" max="100" value="80" oninput="updateVolume(this.value)">
+                            </div>
+                        </div>
+
+                        <!-- CRUIZ AI Mode selector -->
+                        <div class="smart-audio-toggle-container" style="background: rgba(168, 85, 247, 0.05); border-color: rgba(168, 85, 247, 0.2);">
+                            <div class="smart-label-box">
+                                <span class="smart-title-txt">🤖 CRUIZ AI Audio</span>
+                                <span class="smart-desc-txt" id="ai-audio-desc">Automātiska balansēšana</span>
+                            </div>
+                            <select class="smart-ai-select" id="cruiz-ai-audio-mode" onchange="changeCruizAiAudioMode(this.value)">
+                                <option value="off">OFF (Manual)</option>
+                                <option value="normal">AI NORMAL</option>
+                                <option value="extrabass">AI EXTRA BASS</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- DAĻA 2: Pro Kontroles un viedie filtri -->
+                    <div class="control-slide">
+                        <!-- Treble Slider -->
+                        <div class="slider-row">
+                            <div class="slider-label">
+                                <span>Treble Control</span>
+                                <span class="val" id="treble-val">0 dB</span>
+                            </div>
+                            <div class="slider-wrapper">
+                                <input type="range" class="custom-slider" id="slider-treble" min="-10" max="10" value="0" oninput="updateTreble(this.value)">
+                            </div>
+                        </div>
+
+                        <!-- Stereo Balance Slider -->
+                        <div class="slider-row">
+                            <div class="slider-label">
+                                <span>Balance (Panorāma)</span>
+                                <span class="val" id="balance-val">Centrs</span>
+                            </div>
+                            <div class="slider-wrapper">
+                                <input type="range" class="custom-slider" id="slider-balance" min="-10" max="10" value="0" oninput="updateStereoBalance(this.value)">
+                            </div>
+                        </div>
+
+                        <!-- Smart Audio Switch Toggle Layout -->
+                        <div class="smart-audio-toggle-container">
+                            <div class="smart-label-box">
+                                <span class="smart-title-txt">🪄 Smart CRUIZ Audio</span>
+                                <span class="smart-desc-txt">Novērš vokāla distortion</span>
+                            </div>
+                            <input type="checkbox" class="ios-switch" id="smart-audio-toggle" onchange="toggleSmartAudio(this.checked)">
+                        </div>
+
+                        <!-- Smart Subwoofer Phase Inverter 0/180 -->
+                        <div class="smart-audio-toggle-container">
+                            <div class="smart-label-box">
+                                <span class="smart-title-txt">🔊 Smart Subwoofer</span>
+                                <span class="smart-desc-txt">Fāžu invertors (0° / 180°)</span>
+                            </div>
+                            <input type="checkbox" class="ios-switch" id="smart-subwoofer-toggle" onchange="toggleSubwooferPhase(this.checked)">
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Slider Indicators Dots -->
+                <div class="carousel-dots">
+                    <div class="carousel-dot active" id="dot-slide-0" onclick="slideToPart(0)"></div>
+                    <div class="carousel-dot" id="dot-slide-1" onclick="slideToPart(1)"></div>
+                </div>
+            </div>
+
+            <!-- Dynamic Track List & Integrated Search at the Bottom -->
+            <div class="track-list-title">Dziesmu bibliotēka</div>
+            
+            <div class="search-container">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-bar" id="search-input" placeholder="Meklēt dziesmu pēc nosaukuma..." oninput="handleSearch()">
+            </div>
+
+            <div id="tracks-container">
+                <!-- Filled via JS -->
+            </div>
+        </div>
+
+        <!-- 4. 🎰 DYNAMIC MULTI-STAGE INFERNO CASINO HIGH STAKES SCREEN -->
+        <div class="screen" id="casino-screen">
+            <div class="app-header">
+                <div class="header-left">
+                    <img class="header-avatar" src="" id="casino-header-pic">
+                    <span class="header-username" id="casino-header-name">Viesis</span>
+                </div>
+                <div class="points-badge">
+                    <span id="casino-user-points">0</span> PTS
+                </div>
+            </div>
+
+            <div class="casino-header">
+                <div class="casino-title">Cruiz High Stakes</div>
+                <div class="casino-subtitle">Slots & Extreme Risk Multipliers</div>
+            </div>
+
+            <!-- Main Wrapper that switches styles / fires up on stages 2 & 3 -->
+            <div class="slot-machine-wrapper" id="casino-burn-shell-wrapper">
+                <div class="casino-stage-badge" id="casino-stage-label">1. Posms: Slot Machine</div>
+                
+                <!-- STAGE 1 NODES: Slots Window Grid -->
+                <div class="slots-window" id="slots-viewport-frame">
+                    <div class="slot-reel" id="reel-0">🍒</div>
+                    <div class="slot-reel" id="reel-1">🍋</div>
+                    <div class="slot-reel" id="reel-2">💎</div>
+                </div>
+
+                <!-- STAGE 2 & 3 NODES: Real Interactive Rotating Wheel Layer Interface -->
+                <div class="visual-risk-wheel-container hidden" id="interactive-risk-wheel-hud">
+                    <div class="risk-wheel-pin-indicator"></div>
+                    <div class="risk-wheel-disc" id="dynamic-wheel-disc-element">
+                        <!-- Dynamic segments inserted via JS -->
+                    </div>
+                </div>
+
+                <div class="spin-feedback" id="spin-feedback" style="color: #fff; font-size: 14px; margin-bottom: 12px;">Gatavs griezienam!</div>
+                
+                <!-- Main Action buttons -->
+                <button class="btn-casino-action" id="casino-main-cta" onclick="triggerCasinoMainAction()">Iegriez Slotu (2 PTS)</button>
+                <button class="btn-casino-action btn-risk-stop hidden" id="casino-risk-stop-cta" onclick="stopRiskLootAndClaim()">Paņemt Laimestu & Beigt</button>
+            </div>
+            
+            <div class="spin-cost-note" id="casino-cost-helper-text">Slot grieziena vērtība: <span>2 PTS</span></div>
+        </div>
+
+        <!-- 5. STANDALONE DEDICATED PTS HISTORY SCREEN -->
+        <div class="screen" id="history-screen">
+            <div class="app-header">
+                <div class="header-left">
+                    <img class="header-avatar" src="" id="history-header-pic">
+                    <span class="header-username" id="history-header-name">Viesis</span>
+                </div>
+                <div class="points-badge">
+                    <span id="history-user-points">0</span> PTS
+                </div>
+            </div>
+
+            <div class="pts-history-section" id="pts-history-card">
+                <div class="pts-history-section-title">
+                    <span>📊 Mana Punktu Vēsture</span>
+                </div>
+                <div class="pts-history-items-list" id="pts-history-list">
+                    <!-- Dynamic -->
+                </div>
+                <div class="pts-support-footer">
+                    Ja rodas neskaidrības ar punktu bilanci, lūdzu, sazinieties ar Cruiz apkalpošanas centru.
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. NEWS SCREEN -->
+        <div class="screen" id="news-screen">
+            <div class="app-header">
+                <div class="header-left">
+                    <img class="header-avatar" src="" id="news-header-pic">
+                    <span class="header-username" id="news-header-name">Viesis</span>
+                </div>
+                <div class="points-badge">
+                    <span id="news-user-points">0</span> PTS
+                </div>
+            </div>
+
+            <div class="casino-header">
+                <div class="casino-title">Kluba Jaunumi</div>
+                <div class="casino-subtitle">Ekskluzīvās ziņas, atjauninājumi un pasākumi</div>
+            </div>
+
+            <div id="news-container" style="padding-bottom: 20px;">
+                <!-- Dynamically loaded -->
+            </div>
+        </div>
+
+        <!-- 7. ADMIN SCREEN (CONTROL PANEL) -->
+        <div class="screen" id="admin-screen">
+            <div class="app-header">
+                <div class="header-left">
+                    <img class="header-avatar" src="" id="admin-header-pic">
+                    <span class="header-username" id="admin-header-name">Admin</span>
+                </div>
+                <button onclick="logOutUser()" style="padding: 6px 12px; font-size:10px; width:auto; height:30px;" class="btn-primary">Logout</button>
+            </div>
+
+            <div class="casino-header" style="margin-bottom: 10px;">
+                <div class="casino-title" style="text-shadow: 0 0 12px var(--neon-blue);">Admin Control</div>
+                <div class="casino-subtitle">Cruiz sistēmas un datu pārvaldība reāllaikā</div>
+            </div>
+
+            <!-- App Block & Version Settings -->
+            <div class="admin-section-title">⚙️ Aplikācijas Pamatiestatījumi</div>
+            <div class="admin-card">
+                <div class="admin-checkbox-row" style="margin-bottom: 12px;">
+                    <input type="checkbox" id="block-app-toggle" onchange="handleAdminAppBlock()">
+                    <span>Bloķēt aplikāciju visiem useriem</span>
+                </div>
+                <div class="admin-input-group">
+                    <label>Aplikācijas Versija</label>
+                    <input type="text" class="admin-input" id="admin-app-version" value="1.00" placeholder="piem., 1.01" oninput="handleAdminVersionChange(this.value)">
+                </div>
+                <div class="admin-input-group" style="margin-top: 10px;">
+                    <label>Bloķēšanas iemesls</label>
+                    <select class="admin-select" id="block-reason-select" onchange="handleBlockReasonSelect(this.value)">
+                        <option value="Cruiz pašlaik nav pieejams.">Cruiz pašlaik nav pieejams (Noklusējums)</option>
+                        <option value="Cruiz pašlaik tiek atjaunots. Notiek Maintenance darbi.">Cruiz pašlaik tiek atjaunots (Maintenance)</option>
+                        <option value="Cruiz pašlaik nav pieejams jūsu reģionā.">Cruiz pašlaik nav pieejams jūsu reģionā</option>
+                        <option value="custom">Ievadīt savu custom paziņojumu...</option>
+                    </select>
+                </div>
+                <div class="admin-input-group hidden" id="custom-block-msg-container">
+                    <input type="text" class="admin-input" id="custom-block-msg" placeholder="Ieraksti savu paziņojumu..." oninput="handleCustomBlockMsgInput(this.value)">
+                </div>
+            </div>
+
+            <!-- 🍁 SEASONAL EFFECT MODULE INCLUDING BIRTHDAY OVERRIDE -->
+            <div class="admin-section-title orange-sec">🍂 Sezonālo Efektu Kontrole</div>
+            <div class="admin-card">
+                <div class="admin-input-group">
+                    <label>Aktīvais Vizuālais Režīms Lietotājiem</label>
+                    <select class="admin-select" id="admin-seasonal-select" onchange="handleAdminSeasonalChange(this.value)">
+                        <option value="none">Bez efektiem (Noklusējums)</option>
+                        <option value="winter">❄️ Ziema (Maigs sniegs)</option>
+                        <option value="spring">🌸 Pavasaris (Sakuras ziedlapiņas)</option>
+                        <option value="summer">☀️ Vasara (Saules stari & Spīguļi)</option>
+                        <option value="autumn">🍁 Rudens (Zelta lapas)</option>
+                        <option value="birthday">🎉 CRUIZ Dzimšanas diena (Konfeti Vētra)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- USER PROFILE MANAGEMENT -->
+            <div class="admin-section-title">👤 Rediģēt Lietotāju Profilus</div>
+            <div class="admin-card">
+                <div class="admin-input-group">
+                    <label>Izvēlies lietotāju</label>
+                    <select class="admin-select" id="admin-profile-select" onchange="loadProfileToEdit(this.value)">
+                        <option value="ardeens">ardeens</option>
+                        <option value="oto">Oto Auto (oto)</option>
+                    </select>
+                </div>
+                <div class="admin-input-group">
+                    <label>Lietotāja vārds</label>
+                    <input type="text" class="admin-input" id="admin-profile-name" placeholder="Publiskais vārds">
+                </div>
+                <div class="admin-input-group">
+                    <label>Profila Bildes URL (Avatar)</label>
+                    <input type="text" class="admin-input" id="admin-profile-avatar" placeholder="https://...">
+                </div>
+                <button class="btn-primary" style="padding: 10px; margin-top: 5px;" onclick="saveUserProfileAdmin()">Saglabāt Profilu</button>
+            </div>
+
+            <!-- Casino Lock Control -->
+            <div class="admin-section-title pink-sec">🎰 Kazino Bloķēšana</div>
+            <div class="admin-card">
+                <div class="admin-checkbox-row">
+                    <input type="checkbox" id="block-casino-toggle" onchange="handleAdminCasinoBlock()">
+                    <span>Bloķēt Points Spin kazino spēli</span>
+                </div>
+                <div class="admin-input-group" style="margin-top: 10px;">
+                    <label>Kazino bloķēšanas iemesls</label>
+                    <select class="admin-select" id="casino-block-reason-select" onchange="handleCasinoBlockReasonSelect(this.value)">
+                        <option value="Spēļu zāle uz laiku ir slēgta.">nav pašlaik pieejams (Noklusējums)</option>
+                        <option value="Spēļu zāle nav pieejama jūsu reģionā.">nav pieejams jūsu reģionā</option>
+                        <option value="custom">Ievadīt savu custom iemeslu...</option>
+                    </select>
+                </div>
+                <div class="admin-input-group hidden" id="custom-casino-block-msg-container">
+                    <input type="text" class="admin-input" id="custom-casino-block-msg" placeholder="Ieraksti savu iemeslu..." oninput="handleCustomCasinoBlockMsgInput(this.value)">
+                </div>
+            </div>
+
+            <!-- Add New Song with Cloudinary Integration -->
+            <div class="admin-section-title">🎵 Pievienot Jaunu Dziesmu</div>
+            <div class="admin-card">
+                <div class="admin-input-group">
+                    <label>Dziesmas nosaukums</label>
+                    <input type="text" class="admin-input" id="new-song-title" placeholder="Midnight Ride">
+                </div>
+                <div class="admin-input-group">
+                    <label>Izpildītājs</label>
+                    <input type="text" class="admin-input" id="new-song-artist" placeholder="RetroDrive">
+                </div>
+                <div class="admin-input-group">
+                    <label>Bilde (Vāka URL)</label>
+                    <input type="text" class="admin-input" id="new-song-image" placeholder="Saiti uz albuma bildi...">
+                </div>
+                <div class="admin-input-group">
+                    <label>Dziesmas audio fails (.mp3)</label>
+                    <button type="button" class="btn-primary" onclick="openCloudinaryWidget()" style="background: var(--neon-pink); margin-bottom:10px;">
+                        Augšupielādēt dziesmu mākonī
+                    </button>
+                    <input type="text" class="admin-input" id="new-song-audio-url" placeholder="Šeit parādīsies saite pēc augšupielādes..." readonly>
+                </div>
+                <div class="admin-input-group">
+                    <label>Dziesmas likme (PTS)</label>
+                    <input type="number" class="admin-input" id="new-song-cost" placeholder="Līmenis punktos">
+                </div>
+                <button class="btn-primary" style="padding: 12px; margin-top: 10px;" onclick="handleAdminAddSong()">Pievienot dziesmu</button>
+            </div>
+
+            <!-- Song Availability Manager -->
+            <div class="admin-section-title orange-sec">🔒 Dziesmu statusu un likmju kontrole</div>
+            <div class="admin-card" id="admin-song-manager-list">
+                <!-- Dynamically populated list of songs -->
+            </div>
+
+            <!-- Post News Section with PTS Claim functionality -->
+            <div class="admin-section-title">📰 Publicēt Kluba Jaunumu</div>
+            <div class="admin-card">
+                <div class="admin-input-group">
+                    <label>Ziņu Autora Paraksts (Autorun)</label>
+                    <select class="admin-select" id="new-news-author">
+                        <option value="Cruiz Administrators">Cruiz Administrators</option>
+                        <option value="Īpašnieks">Īpašnieks</option>
+                    </select>
+                </div>
+                <div class="admin-input-group">
+                    <label>Jaunuma virsraksts</label>
+                    <input type="text" class="admin-input" id="new-news-title" placeholder="Virsraksts">
+                </div>
+                <div class="admin-input-group">
+                    <label>Satura teksts</label>
+                    <textarea class="admin-textarea" id="new-news-text" placeholder="Ievadi ziņu šeit..." rows="3"></textarea>
+                </div>
+                <div class="admin-input-group">
+                    <label>Attēla saite (URL)</label>
+                    <input type="text" class="admin-input" id="new-news-image" placeholder="URL bildei">
+                </div>
+                
+                <div class="admin-checkbox-row" style="margin-top: 15px; margin-bottom: 15px;">
+                    <input type="checkbox" id="news-add-gift" onchange="toggleGiftInput(this.checked)">
+                    <span>Pievienot dāvanas Claim PTS pogu</span>
+                </div>
+                
+                <div class="admin-input-group hidden" id="gift-pts-amount-container">
+                    <label>PTS daudzums, ko lietotājs saņem</label>
+                    <input type="number" class="admin-input" id="news-gift-pts" placeholder="Piem. 15">
+                </div>
+
+                <button class="btn-primary" style="padding: 12px; background: linear-gradient(90deg, var(--neon-pink), #ff0055); box-shadow: 0 4px 15px rgba(255,0,127,0.3); margin-top: 10px;" onclick="handleAdminAddNews()">Publicēt ziņu (Skaņas Signāls)</button>
+            </div>
+
+            <!-- User Tracking Monitor with live online status bulbs and UNIQUE LOGIN CODE -->
+            <div class="admin-section-title pink-sec">👥 Lietotāju Monitorings un PTS rediģēšana</div>
+            <div id="admin-user-tracker">
+                <!-- Live logs & control panels -->
+            </div>
+        </div>
+
+        <!-- BOTTOM NAV BAR -->
+        <div class="bottom-nav" id="bottom-navigation" style="display: none;">
+            <div class="nav-tab active" id="tab-btn-player" onclick="switchNavTab('player-screen')">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
+                </svg>
+                Player
+            </div>
+            <div class="nav-tab" id="tab-btn-casino" onclick="switchNavTab('casino-screen')">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/>
+                </svg>
+                Casino
+                <span class="blocked-badge hidden" id="casino-block-badge">✕</span>
+            </div>
+            <div class="nav-tab" id="tab-btn-history" onclick="switchNavTab('history-screen')">
+                <svg viewBox="0 0 24 24">
+                    <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
+                </svg>
+                History
+                <span class="unread-dot" id="history-unread-dot"></span>
+            </div>
+            <div class="nav-tab" id="tab-btn-news" onclick="switchNavTab('news-screen')">
+                <svg viewBox="0 0 24 24">
+                    <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 14H4v-4h11v4zm0-5H4V9h11v4zm5 5h-4V9h4v9z"/>
+                </svg>
+                News
+                <span class="unread-dot" id="news-unread-dot"></span>
+            </div>
+            <div class="nav-tab" id="tab-btn-admin" onclick="switchNavTab('admin-screen')" style="display: none;">
+                <svg viewBox="0 0 24 24">
+                    <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
+                </svg>
+                Admin
+            </div>
+        </div>
+
+        <!-- Enhanced Toast Notification System -->
+        <div class="toast" id="toast-notif">
+            <span id="toast-icon">⚠️</span>
+            <span id="toast-text">Paziņojums</span>
+        </div>
+    </div>
+
+    <!-- SFX Engine Elements with Guaranteed URLs -->
+    <audio id="news-chime-sound" src="https://assets.mixkit.co/active_storage/sfx/911/911-84.wav" preload="auto"></audio>
+    <audio id="real-audio-player" src="" crossorigin="anonymous" preload="auto"></audio>
+    <audio id="sfx-spin" src="https://assets.mixkit.co/active_storage/sfx/2067/2067-84.wav" preload="auto" loop></audio>
+    <audio id="sfx-win" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-84.wav" preload="auto"></audio>
+    <audio id="sfx-lose" src="https://assets.mixkit.co/active_storage/sfx/1993/1993-84.wav" preload="auto"></audio>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCL45okf5CStFSOq620q5tJgtMyaOwbq44",
+            authDomain: "cruiz-ba3ae.firebaseapp.com",
+            projectId: "cruiz-ba3ae",
+            storageBucket: "cruiz-ba3ae.firebasestorage.app",
+            messagingSenderId: "1051000651791",
+            appId: "1:1051000651791:web:8123af7c2ca5504a5ee37a",
+            measurementId: "G-CJ29R0BHK3"
+        };
+
+        // Inicializējam Firebase un Firestore
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        const pinDatabase = {
+            "249559": { user: "ad", role: "admin" },
+            "549716": { user: "ardeens", role: "user" },
+            "095538": { user: "oto", role: "user" }
+        };
+
+        let localState = {
+            songs: [], appBlocked: false, blockMessage: "Cruiz nav pieejams.",
+            casinoBlocked: false, casinoBlockMessage: "Spēļu zāle slēgta.",
+            version: "1.00", seasonalEffect: "none",
+            news: [], userProfiles: {}, userLogs: {}, history: []
+        };
+
+        let currentUser = null; let currentUserRole = null;
+        let currentActiveScreen = 'login-screen'; let isAudioPlaying = false;
+        let activeSongIndex = 0; let playTrackerTimer = null;
+        let secondsListened = 0; let currentSearchQuery = "";
+        let enteredPin = ""; let isUserSeekingTrack = false;
+        let repeatModeActive = false;
+
+        // SWIPE CAROUSEL LOGS
+        let currentCarouselSlide = 0;
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        // 🎰 3-STAGE DEGOŠAIS KAZINO & INTERAKTĪVAIS RATS
+        let casinoGameStage = 1; 
+        let currentStageWinnings = 0;
+        let currentWheelRotation = 0;
+        const slotSymbols = ["🍒", "🍋", "🍊", "🍇", "💎", "⭐"];
+        
+        const wheelSectorsDatabase = {
+            stage2: [
+                { label: "1.1x", val: 1.1 }, { label: "0.1x", val: 0.1 },
+                { label: "1.2x", val: 1.2 }, { label: "0.2x", val: 0.2 },
+                { label: "1.5x", val: 1.5 }, { label: "0.5x", val: 0.5 },
+                { label: "2.0x", val: 2.0 }, { label: "0.2x", val: 0.2 }
+            ],
+            stage3: [
+                { label: "10x", val: 10.0 }, { label: "0.1x", val: 0.1 },
+                { label: "0.2x", val: 0.2 },  { label: "0.3x", val: 0.3 },
+                { label: "100x", val: 100.0 },{ label: "0.1x", val: 0.1 },
+                { label: "0.2x", val: 0.2 },  { label: "0.3x", val: 0.3 }
+            ]
+        };
+
+        const realAudio = document.getElementById('real-audio-player');
+        const trackProgressBar = document.getElementById('track-progress-bar');
+        const trackCurrentTimeEl = document.getElementById('track-current-time');
+        const trackTotalDurationEl = document.getElementById('track-total-duration');
+
+        // PRO AUDIO FILTRI & AI (Web Audio API)
+        let audioCtx = null; let sourceNode = null; 
+        let bassFilter = null; let trebleFilter = null;
+        let stereoPannerNode = null; let subwooferPhaseNode = null;
+        let smartAudioLimiter = null; let isSmartAudioOn = false;
+        let audioAnalyserNode = null; let cruizAiAudioMode = "off";
+
+        // 🔥 STRĀDĀJOŠS SFX ENGINE AR AUTOMĀTISKU ATBLOĶĒŠANU (Pret browsera klusuma politiku)
+        function playSfx(id) {
+            const sound = document.getElementById(id);
+            if(sound) { 
+                sound.muted = false;
+                // Ja tas ir griešanās troksnis, uzliekam uz loop
+                if (id === 'sfx-spin') {
+                    sound.loop = true;
+                } else {
+                    // Citas skaņas pārtrauc griešanos
+                    const spinSound = document.getElementById('sfx-spin');
+                    if (spinSound) spinSound.pause();
+                }
+                sound.currentTime = 0; 
+                let p = sound.play();
+                if (p !== undefined) {
+                    p.catch(e => { console.log("Audio atskaņošana aizturēta līdz lietotāja darbībai", e); });
+                }
+            }
+        }
+
+        function stopSfx(id) {
+            const sound = document.getElementById(id);
+            if(sound) sound.pause();
+        }
+
+        // Šī funkcija klusi aktivizē visus audio elementus brīdī, kad lietotājs klikšķina pa klaviatūru
+        function unlockBrowserAudioPolicy() {
+            ['sfx-spin', 'sfx-win', 'sfx-lose', 'news-chime-sound'].forEach(id => {
+                const sound = document.getElementById(id);
+                if (sound) {
+                    sound.play().then(() => { sound.pause(); sound.currentTime = 0; }).catch(()=>{});
+                }
+            });
+            // Noņemam listeneru pēc pirmā izpildījuma
+            window.removeEventListener('click', unlockBrowserAudioPolicy);
+            window.removeEventListener('touchstart', unlockBrowserAudioPolicy);
+        }
+        window.addEventListener('click', unlockBrowserAudioPolicy);
+        window.addEventListener('touchstart', unlockBrowserAudioPolicy);
+
+        function initWebAudio() {
+            if (audioCtx) return;
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                sourceNode = audioCtx.createMediaElementSource(realAudio);
+                
+                bassFilter = audioCtx.createBiquadFilter();
+                bassFilter.type = "lowshelf";
+                bassFilter.frequency.value = 150;
+
+                trebleFilter = audioCtx.createBiquadFilter();
+                trebleFilter.type = "highshelf";
+                trebleFilter.frequency.value = 4000;
+
+                stereoPannerNode = audioCtx.createStereoPanner();
+                
+                subwooferPhaseNode = audioCtx.createGain();
+                subwooferPhaseNode.gain.setValueAtTime(1, audioCtx.currentTime);
+
+                audioAnalyserNode = audioCtx.createAnalyser();
+                audioAnalyserNode.fftSize = 64;
+
+                smartAudioLimiter = audioCtx.createDynamicsCompressor();
+                smartAudioLimiter.threshold.setValueAtTime(-3, audioCtx.currentTime);
+                smartAudioLimiter.knee.setValueAtTime(4, audioCtx.currentTime);
+                smartAudioLimiter.ratio.setValueAtTime(12, audioCtx.currentTime);
+                smartAudioLimiter.attack.setValueAtTime(0.003, audioCtx.currentTime);
+                smartAudioLimiter.release.setValueAtTime(0.08, audioCtx.currentTime);
+
+                sourceNode.connect(bassFilter);
+                bassFilter.connect(trebleFilter);
+                trebleFilter.connect(stereoPannerNode);
+                stereoPannerNode.connect(subwooferPhaseNode);
+                subwooferPhaseNode.connect(audioAnalyserNode);
+                
+                routeFinalAudioOutput();
+
+                updateBass(document.getElementById('slider-bass').value);
+                updateTreble(document.getElementById('slider-treble').value);
+                updateStereoBalance(document.getElementById('slider-balance').value);
+            } catch (err) { console.error(err); }
+        }
+
+        function routeFinalAudioOutput() {
+            if(!audioCtx) return;
+            try {
+                audioAnalyserNode.disconnect();
+                smartAudioLimiter.disconnect();
+                if (isSmartAudioOn) {
+                    audioAnalyserNode.connect(smartAudioLimiter);
+                    smartAudioLimiter.connect(audioCtx.destination);
+                } else {
+                    audioAnalyserNode.connect(audioCtx.destination);
+                }
+            } catch(e){}
+        }
+
+        function toggleSmartAudio(checked) {
+            isSmartAudioOn = checked;
+            routeFinalAudioOutput();
+        }
+
+        function toggleSubwooferPhase(checked) {
+            if (!audioCtx) initWebAudio();
+            if (subwooferPhaseNode) {
+                const mult = checked ? -1 : 1;
+                subwooferPhaseNode.gain.setValueAtTime(mult, audioCtx.currentTime);
+                showToastNotification(checked ? "Fāze invertēta: 180°" : "Fāze normāla: 0°", "🔊");
+            }
+        }
+
+        function updateStereoBalance(val) {
+            const panVal = parseFloat(val) / 10;
+            let text = "Centrs";
+            if(panVal < 0) text = `Kreisā puse (${Math.abs(val)*10}%)`;
+            if(panVal > 0) text = `Labā puse (${panVal*100}%)`;
+            document.getElementById('balance-val').innerText = text;
+            if (stereoPannerNode) {
+                stereoPannerNode.pan.setValueAtTime(panVal, audioCtx.currentTime);
+            }
+        }
+
+        // SWIPE CAROUSEL ENGINE HUB SURFACE
+        function handleCarouselTouchStart(e) { touchStartX = e.touches[0].clientX; }
+        function handleCarouselTouchMove(e) { touchEndX = e.touches[0].clientX; }
+        function handleCarouselTouchEnd() {
+            const swipeDistance = touchStartX - touchEndX;
+            if (Math.abs(swipeDistance) > 45) {
+                if (swipeDistance > 0 && currentCarouselSlide === 0) {
+                    slideToPart(1);
+                } else if (swipeDistance < 0 && currentCarouselSlide === 1) {
+                    slideToPart(0);
+                }
+            }
+        }
+
+        function slideToPart(slideIdx) {
+            currentCarouselSlide = slideIdx;
+            const track = document.getElementById('carousel-track');
+            track.style.transform = `translateX(-${slideIdx * 50}%)`;
+            
+            document.getElementById('dot-slide-0').classList.toggle('active', slideIdx === 0);
+            document.getElementById('dot-slide-1').classList.toggle('active', slideIdx === 1);
+        }
+
+        function changeCruizAiAudioMode(mode) {
+            cruizAiAudioMode = mode;
+            const desc = document.getElementById('ai-audio-desc');
+            const bassSlider = document.getElementById('slider-bass');
+            const glassPanel = document.getElementById('main-controls-glass-panel');
+            const waveLayer = document.getElementById('cosmic-ai-wave-backdrop');
+            
+            if (mode === 'off') {
+                desc.innerText = "Automātiska balansēšana";
+                bassSlider.disabled = false;
+                updateBass(bassSlider.value);
+                glassPanel.classList.remove('ai-water-glow');
+                waveLayer.classList.remove('active');
+            } else {
+                bassSlider.disabled = true;
+                if (mode === 'normal') desc.innerText = "Režīms: AI Viedais Balanss";
+                if (mode === 'extrabass') desc.innerText = "Režīms: AI EXTRA BASS 🚀";
+                glassPanel.classList.add('ai-water-glow');
+                waveLayer.classList.add('active');
+                if (!audioCtx) initWebAudio();
+            }
+        }
+
+        // ---- RUNNING CRUIZ AI SPECTRUM ANALYZER ALGORITHM ----
+        function runCruizAiAudioProcessing() {
+            if (isAudioPlaying && audioCtx && audioAnalyserNode && cruizAiAudioMode !== 'off') {
+                const bufferLength = audioAnalyserNode.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                audioAnalyserNode.getByteFrequencyData(dataArray);
+
+                let lowFreqSum = 0;
+                let lowFreqCount = 6;
+                for (let i = 0; i < lowFreqCount; i++) { lowFreqSum += dataArray[i]; }
+                let avgBassEnergy = lowFreqSum / lowFreqCount;
+
+                let targetBassLevel = 3;
+                if (cruizAiAudioMode === 'normal') {
+                    if (avgBassEnergy < 60) targetBassLevel = 6;
+                    else if (avgBassEnergy < 120) targetBassLevel = 4;
+                    else targetBassLevel = 2;
+                } else if (cruizAiAudioMode === 'extrabass') {
+                    if (avgBassEnergy < 80) targetBassLevel = 9;
+                    else if (avgBassEnergy < 150) targetBassLevel = 7;
+                    else targetBassLevel = 5;
+                }
+
+                if (bassFilter) {
+                    const targetDb = (targetBassLevel - 1) * 3.5;
+                    bassFilter.gain.setValueAtTime(targetDb, audioCtx.currentTime);
+                    const bassValEl = document.getElementById('bass-val');
+                    bassValEl.innerText = `AI: Lvl ${targetBassLevel}`;
+                    bassValEl.style.color = targetBassLevel > 6 ? "var(--neon-pink)" : "var(--neon-cyan)";
+                }
+            }
+            setTimeout(runCruizAiAudioProcessing, 150);
+        }
+        runCruizAiAudioProcessing();
+
+        // ---- LIVE SIMULATED NETWORK STATUS SPEED CONTROLLER ----
+        function trackInternetNetworkStatus() {
+            const speedText = document.getElementById('net-speed-text');
+            const dot = document.getElementById('net-indicator-dot');
+            if (!navigator.onLine) {
+                speedText.innerText = "Offline"; speedText.style.color = "var(--neon-pink)";
+                dot.style.backgroundColor = "var(--neon-pink)"; dot.style.boxShadow = "0 0 6px var(--neon-pink)";
+                return;
+            }
+            const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            let mbps = conn ? conn.downlink : (Math.random() * 16 + 4).toFixed(1);
+            if(mbps > 8) {
+                speedText.innerText = `${mbps} Mbps`; speedText.style.color = "var(--neon-green)";
+                dot.style.backgroundColor = "var(--neon-green)"; dot.style.boxShadow = "0 0 6px var(--neon-green)";
+            } else if (mbps > 3) {
+                speedText.innerText = `${mbps} Mbps`; speedText.style.color = "var(--neon-orange)";
+                dot.style.backgroundColor = "var(--neon-orange)"; dot.style.boxShadow = "0 0 6px var(--neon-orange)";
+            } else {
+                speedText.innerText = "Low Sign"; speedText.style.color = "var(--neon-pink)";
+                dot.style.backgroundColor = "var(--neon-pink)"; dot.style.boxShadow = "0 0 6px var(--neon-pink)";
+            }
+        }
+        setInterval(trackInternetNetworkStatus, 3000);
+        trackInternetNetworkStatus();
+
+        // ---- AGGRESSIVE SMOOTH AUDIO AMBIENT WAVE VISUALIZER ----
+        const vCanvas = document.getElementById('visualizer-canvas');
+        const vCtx = vCanvas.getContext('2d');
+        vCanvas.width = 410; vCanvas.height = 260;
+        let wavePhase = 0;
+
+        function renderAudioWaveVisualizer() {
+            vCtx.clearRect(0, 0, vCanvas.width, vCanvas.height);
+            if (isAudioPlaying) {
+                wavePhase += 0.05;
+                const bLevel = parseInt(document.getElementById('slider-bass').value);
+                const amplitude = 14 + (bLevel * 4);
+                
+                vCtx.beginPath();
+                vCtx.strokeStyle = 'rgba(0, 242, 254, 0.2)';
+                vCtx.lineWidth = 3.5;
+                for (let x = 0; x < vCanvas.width; x++) {
+                    let y = vCanvas.height / 2 + Math.sin(x * 0.025 + wavePhase) * amplitude * Math.sin(x * 0.006);
+                    if (x === 0) vCtx.moveTo(x, y); else vCtx.lineTo(x, y);
+                }
+                vCtx.stroke();
+            }
+            requestAnimationFrame(renderAudioWaveVisualizer);
+        }
+        renderAudioWaveVisualizer();
+
+        // ---- CANVAS ANIMATION FOR SEASONAL EFFECTS & PARTY CONFETTI VĒTRA ----
+        const canvas = document.getElementById('seasonal-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function createParticles() {
+            particles = [];
+            let count = 0;
+            if (localState.seasonalEffect !== 'none') {
+                count = localState.seasonalEffect === 'birthday' ? 65 : 25;
+            }
+            for(let i=0; i<count; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    r: Math.random() * 4 + 1.5,
+                    d: Math.random() * 1.2 + 0.4,
+                    w: Math.random() * 0.02,
+                    angle: Math.random() * Math.PI,
+                    opacity: Math.random() * 0.6 + 0.3,
+                    color: localState.seasonalEffect === 'birthday' ? `hsl(${Math.random() * 360}, 100%, 60%)` : (localState.seasonalEffect === 'winter' ? 'rgba(255,255,255,0.45)' : (localState.seasonalEffect === 'spring' ? 'rgba(255,182,193,0.5)' : 'rgba(218,165,32,0.45)'))
+                });
+            }
+        }
+
+        function animateSeasonalEffects() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (localState.seasonalEffect === 'none') {
+                requestAnimationFrame(animateSeasonalEffects);
+                return;
+            }
+            if (localState.seasonalEffect === 'birthday') {
+                for(let i=0; i<particles.length; i++) {
+                    let p = particles[i];
+                    ctx.beginPath(); ctx.fillStyle = p.color;
+                    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle);
+                    ctx.fillRect(-p.r, -p.r, p.r * 2.2, p.r * 1.4); ctx.restore();
+                    p.y += p.d * 1.5; p.angle += p.w; p.x += Math.sin(p.angle) * 0.4;
+                    if(p.y > canvas.height) { p.y = -15; p.x = Math.random() * canvas.width; }
+                }
+            } else if (localState.seasonalEffect === 'summer') {
+                for(let i=0; i<particles.length; i++) {
+                    let p = particles[i];
+                    ctx.beginPath();
+                    let gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 3);
+                    gradient.addColorStop(0, `rgba(255, 230, 140, ${p.opacity})`);
+                    gradient.addColorStop(1, 'rgba(255,230,140,0)');
+                    ctx.fillStyle = gradient; ctx.arc(p.x, p.y, p.r * 3, 0, Math.PI*2); ctx.fill();
+                    p.y -= p.d * 0.4; p.x += Math.sin(p.angle) * 0.2; p.angle += p.w;
+                    if (p.y < -10) { p.y = canvas.height + 10; p.x = Math.random() * canvas.width; }
+                }
+            } else {
+                for(let i=0; i<particles.length; i++) {
+                    let p = particles[i];
+                    ctx.beginPath(); ctx.fillStyle = p.color;
+                    if (localState.seasonalEffect === 'winter') { ctx.arc(p.x, p.y, p.r, 0, Math.PI*2, true); } 
+                    else if (localState.seasonalEffect === 'spring') { ctx.ellipse(p.x, p.y, p.r*1.5, p.r, p.angle, 0, Math.PI*2); } 
+                    else if (localState.seasonalEffect === 'autumn') { ctx.rect(p.x, p.y, p.r*2, p.r); }
+                    ctx.fill();
+                    p.y += p.d; p.angle += p.w; p.x += Math.sin(p.angle) * 0.3;
+                    if(p.y > canvas.height) { p.y = -10; p.x = Math.random() * canvas.width; }
+                }
+            }
+            requestAnimationFrame(animateSeasonalEffects);
+        }
+        animateSeasonalEffects();
+
+        function updateUserActivityTimestamp() {
+            if (!currentUser || currentUserRole === 'admin') return;
+            db.collection("logs").doc(currentUser).update({
+                lastActiveTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                lastHeartbeat: Date.now(),
+                lastOnline: new Date().toLocaleString('lv-LV')
+            }).catch(e => {});
+        }
+        window.addEventListener('click', updateUserActivityTimestamp);
+        window.addEventListener('input', updateUserActivityTimestamp);
+
+        // ---- INFERNO MULTI-STAGE CASINO HIGH STAKES ENGINE ----
+        function triggerCasinoMainAction() {
+            if(currentUserRole === 'admin') { showToastNotification("Admins nevar spēlēt!"); return; }
+            const profile = localState.userProfiles[currentUser] || { points: 15 };
+            let currentPts = profile.points !== undefined ? profile.points : 15;
+
+            if (casinoGameStage === 1) {
+                // POSMS 1: Slots Machine Wheel Spin
+                if(currentPts < 2) { showToastNotification("Nepieciešami 2 PTS!"); return; }
+                currentPts -= 2; 
+                playSfx('sfx-spin'); // Sāk skanēt griešanās audio cilpa
+                db.collection("profiles").doc(currentUser).set({ points: currentPts }, { merge: true });
+                db.collection("history").add({ username: currentUser, amount: -2, reason: "Cruiz Slots spēle", timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+                
+                document.getElementById('spin-feedback').innerText = "Griežam ruļļus...";
+                document.getElementById('casino-main-cta').disabled = true;
+
+                let ticks = 0;
+                let interval = setInterval(() => {
+                    document.getElementById('reel-0').innerText = slotSymbols[Math.floor(Math.random()*slotSymbols.length)];
+                    document.getElementById('reel-1').innerText = slotSymbols[Math.floor(Math.random()*slotSymbols.length)];
+                    document.getElementById('reel-2').innerText = slotSymbols[Math.floor(Math.random()*slotSymbols.length)];
+                    ticks++;
+                    if(ticks > 14) {
+                        clearInterval(interval);
+                        stopSfx('sfx-spin');
+                        processSlotsMathOutcome();
+                    }
+                }, 90);
+            } else if (casinoGameStage === 2) {
+                runVisualRiskWheelLogic(2);
+            } else if (casinoGameStage === 3) {
+                runVisualRiskWheelLogic(3);
+            }
+        }
+
+        function processSlotsMathOutcome() {
+            const rng = Math.random() * 100;
+            let winAmount = 0;
+            
+            if (rng <= 2) winAmount = 100;
+            else if (rng <= 5) winAmount = 70;
+            else if (rng <= 10) winAmount = 50;
+            else if (rng <= 40) winAmount = 20;
+            else if (rng <= 80) winAmount = 5;
+            else winAmount = 2;
+
+            currentStageWinnings = winAmount;
+            playSfx('sfx-win'); // Fanfaras par slotu iznākumu
+            
+            const feedback = document.getElementById('spin-feedback');
+            feedback.innerText = `Slots sakrita! Laimests: +${winAmount} PTS!`;
+            feedback.style.color = "var(--neon-green)";
+
+            casinoGameStage = 2;
+            renderVisualRiskWheelSectors('stage2');
+
+            const shellWrapper = document.getElementById('casino-burn-shell-wrapper');
+            shellWrapper.className = "slot-machine-wrapper burn-stage2"; // Ieslēdzas sarkanā uguns gaisma
+
+            document.getElementById('slots-viewport-frame').classList.add('hidden');
+            document.getElementById('interactive-risk-wheel-hud').classList.remove('hidden');
+
+            const badge = document.getElementById('casino-stage-label');
+            badge.innerText = "2. Posms: Dubultošanas Riska Rats";
+            badge.className = "casino-stage-badge badge-stage2";
+
+            const mainCta = document.getElementById('casino-main-cta');
+            mainCta.disabled = false;
+            mainCta.innerText = "Iegriezt Riska Ratu";
+            mainCta.style.background = "linear-gradient(135deg, var(--neon-orange), var(--neon-pink))";
+
+            document.getElementById('casino-cost-helper-text').innerHTML = `Pašreizējais uzkrājums: <span style='color:var(--neon-green)'>${currentStageWinnings} PTS</span>`;
+            document.getElementById('casino-risk-stop-cta').classList.remove('hidden');
+        }
+
+        function renderVisualRiskWheelSectors(stageKey) {
+            const disc = document.getElementById('dynamic-wheel-disc-element');
+            disc.innerHTML = "";
+            const sectors = wheelSectorsDatabase[stageKey];
+            sectors.forEach((sec, idx) => {
+                const item = document.createElement('div');
+                item.className = `risk-wheel-sector sec-rot-${idx}`;
+                item.innerHTML = `<div class="risk-wheel-sector-label">${sec.label}</div>`;
+                disc.appendChild(item);
+            });
+            disc.style.transform = `rotate(0deg)`;
+            currentWheelRotation = 0;
+        }
+
+        function runVisualRiskWheelLogic(stageNum) {
+            playSfx('sfx-spin'); // Garantēti ieslēdzas nepārtraukts griešanās sfx troksnis
+            document.getElementById('casino-main-cta').disabled = true;
+            document.getElementById('casino-risk-stop-cta').classList.add('hidden');
+            document.getElementById('spin-feedback').innerText = "Rats griežas...";
+            document.getElementById('spin-feedback').style.color = "var(--neon-purple)";
+
+            const sectors = stageNum === 2 ? wheelSectorsDatabase.stage2 : wheelSectorsDatabase.stage3;
+            const targetSectorIdx = Math.floor(Math.random() * sectors.length);
+            const targetSector = sectors[targetSectorIdx];
+
+            const spinRounds = 6;
+            const sectorAngle = 45;
+            const targetOffsetAngle = targetSectorIdx * sectorAngle;
+            currentWheelRotation += (spinRounds * 360) + (360 - targetOffsetAngle);
+
+            const discElement = document.getElementById('dynamic-wheel-disc-element');
+            discElement.style.transform = `rotate(${currentWheelRotation}deg)`;
+
+            setTimeout(() => {
+                stopSfx('sfx-spin'); // Apstādina rata griešanās troksni uzreiz pēc stop
+                const multiplier = targetSector.val;
+                currentStageWinnings = Math.round(currentStageWinnings * multiplier);
+                if(currentStageWinnings < 1 && multiplier > 0) currentStageWinnings = 1;
+
+                if (multiplier < 1.0) {
+                    playSfx('sfx-lose'); // Zaudējuma sfx
+                    document.getElementById('spin-feedback').innerText = `Skarbi! Rats uzrādīja ${multiplier}x. Tev palika ${currentStageWinnings} PTS.`;
+                    document.getElementById('spin-feedback').style.color = "var(--neon-pink)";
+                    stopRiskLootAndClaim();
+                } else {
+                    playSfx('sfx-win'); // Uzvaras sfx fanfaras
+                    document.getElementById('spin-feedback').style.color = "var(--neon-green)";
+                    
+                    if (stageNum === 2) {
+                        document.getElementById('spin-feedback').innerText = `Veiksme! ${multiplier}x! Laimests pieauga līdz ${currentStageWinnings} PTS!`;
+                        casinoGameStage = 3;
+                        
+                        renderVisualRiskWheelSectors('stage3');
+
+                        const shellWrapper = document.getElementById('casino-burn-shell-wrapper');
+                        shellWrapper.className = "slot-machine-wrapper burn-stage3"; // RIKTĪGI DEG UN ZIBSNĪ EKSTRĒMI!
+                        
+                        document.getElementById('interactive-risk-wheel-hud').classList.add('stage3-wheel');
+
+                        const badge = document.getElementById('casino-stage-label');
+                        badge.innerText = "3. Posms: FINĀLA MEGA STAKES RISKS";
+                        badge.className = "casino-stage-badge badge-stage3";
+
+                        const mainCta = document.getElementById('casino-main-cta');
+                        mainCta.disabled = false;
+                        mainCta.innerText = "FINĀLA MEGA INFERNO RISKS 🔥";
+                        mainCta.style.background = "linear-gradient(135deg, var(--neon-pink), #ff0000)";
+                        
+                        document.getElementById('casino-cost-helper-text').innerHTML = `Pašreizējais uzkrājums: <span style='color:var(--neon-green)'>${currentStageWinnings} PTS</span>`;
+                        document.getElementById('casino-risk-stop-cta').classList.remove('hidden');
+                    } else {
+                        document.getElementById('spin-feedback').innerText = `NETICAMI! Fināla reizinātājs ${multiplier}x! Kopā: ${currentStageWinnings} PTS!`;
+                        stopRiskLootAndClaim();
+                    }
+                }
+            }, 3500); 
+        }
+
+        function stopRiskLootAndClaim() {
+            if(currentUserRole === 'admin') return;
+            const profile = localState.userProfiles[currentUser] || { points: 15 };
+            let total = (profile.points !== undefined ? profile.points : 15) + currentStageWinnings;
+
+            db.collection("profiles").doc(currentUser).set({ points: total }, { merge: true }).then(() => {
+                db.collection("history").add({
+                    username: currentUser, amount: currentStageWinnings,
+                    reason: `Cruiz Casino multi-stage rezultāts`, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                showToastNotification(`Ieskaitīti +${currentStageWinnings} PTS makā!`, "🎰");
+                resetCasinoToDefaultState();
+            });
+        }
+
+        function resetCasinoToDefaultState() {
+            casinoGameStage = 1;
+            currentStageWinnings = 0;
+            
+            const shellWrapper = document.getElementById('casino-burn-shell-wrapper');
+            if (shellWrapper) shellWrapper.className = "slot-machine-wrapper";
+
+            document.getElementById('slots-viewport-frame').classList.remove('hidden');
+            document.getElementById('interactive-risk-wheel-hud').classList.add('hidden');
+            document.getElementById('interactive-risk-wheel-hud').classList.remove('stage3-wheel');
+
+            const badge = document.getElementById('casino-stage-label');
+            badge.innerText = "1. Posms: Slot Machine";
+            badge.className = "casino-stage-badge badge-stage1";
+
+            const mainCta = document.getElementById('casino-main-cta');
+            mainCta.disabled = false;
+            mainCta.innerText = "Iegriez Slotu (2 PTS)";
+            mainCta.style.background = "linear-gradient(135deg, var(--neon-purple), var(--neon-pink))";
+
+            document.getElementById('casino-cost-helper-text').innerHTML = "Slot grieziena vērtība: <span>2 PTS</span>";
+            document.getElementById('casino-risk-stop-cta').classList.add('hidden');
+        }
+
+        function setupFirebaseListeners() {
+            db.collection("settings").doc("app_state").onSnapshot((doc) => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    localState.appBlocked = data.appBlocked || false;
+                    localState.blockMessage = data.blockMessage || "Cruiz pašlaik nav pieejams.";
+                    localState.casinoBlocked = data.casinoBlocked || false;
+                    localState.casinoBlockMessage = data.casinoBlockMessage || "Spēļu zāle uz laiku ir slēgta.";
+                    localState.version = data.version || "1.00";
+                    
+                    if(localState.seasonalEffect !== data.seasonalEffect) {
+                        localState.seasonalEffect = data.seasonalEffect || "none";
+                        const selectS = document.getElementById('admin-seasonal-select');
+                        if (selectS) selectS.value = localState.seasonalEffect;
+                        createParticles();
+                    }
+                    
+                    document.getElementById('app-display-version').innerText = `v${localState.version}`;
+                    if(document.getElementById('admin-app-version')) document.getElementById('admin-app-version').value = localState.version;
+
+                    const blockBadge = document.getElementById('casino-block-badge');
+                    if (blockBadge) {
+                        if (localState.casinoBlocked) blockBadge.classList.remove('hidden');
+                        else blockBadge.classList.add('hidden');
+                    }
+
+                    if (currentUser && currentUserRole !== 'admin' && localState.casinoBlocked && currentActiveScreen === 'casino-screen') {
+                        showToastNotification(`🎰 Kazino tika slēgts: ${localState.casinoBlockMessage}`);
+                        switchNavTab('player-screen');
+                    }
+
+                    if (currentUser && currentUserRole !== 'admin' && localState.appBlocked) {
+                        pauseSong(); showAppBlockedOverlay(localState.blockMessage);
+                    } else if (!localState.appBlocked) {
+                        document.getElementById('block-screen').className = "block-screen-overlay hidden";
+                    }
+                    populateAdminPanel();
+                }
+            });
+
+            db.collection("songs").orderBy("price", "desc").onSnapshot((snapshot) => {
+                const songsList = [];
+                snapshot.forEach(doc => { songsList.push({ id: doc.id, ...doc.data() }); });
+                localState.songs = songsList;
+                populateTrackLibrary();
+                populateAdminPanel();
+                updateNextTrackHudPreview();
+            });
+
+            db.collection("news").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
+                const newsList = [];
+                snapshot.forEach(doc => { newsList.push({ id: doc.id, ...doc.data() }); });
+                if (localState.news.length > 0 && newsList.length > localState.news.length && currentUser) {
+                    document.getElementById('news-chime-sound').play().catch(e=>{});
+                    document.getElementById('news-unread-dot').style.display = 'block';
+                }
+                localState.news = newsList;
+                populateNewsFeed();
+            });
+
+            db.collection("profiles").onSnapshot((snapshot) => {
+                snapshot.forEach(doc => { localState.userProfiles[doc.id] = doc.data(); });
+                if (currentUser) {
+                    populateHeaderData();
+                    populateTrackLibrary();
+                    renderUserPtsHistory();
+                }
+            });
+
+            db.collection("logs").onSnapshot((snapshot) => {
+                snapshot.forEach(doc => { localState.userLogs[doc.id] = doc.data(); });
+                populateAdminPanel();
+            });
+
+            db.collection("history").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
+                const histList = [];
+                snapshot.forEach(doc => { histList.push({ id: doc.id, ...doc.data() }); });
+                if(localState.history.length > 0 && histList.length > mobileHistCount() && currentUser && currentUserRole !== 'admin') {
+                    const userHistNew = histList.filter(h => h.username === currentUser);
+                    const userHistOld = localState.history.filter(h => h.username === currentUser);
+                    if(userHistNew.length > userHistOld.length && currentActiveScreen !== 'history-screen') {
+                        document.getElementById('history-unread-dot').style.display = 'block';
+                    }
+                }
+                localState.history = histList;
+                renderUserPtsHistory();
+                populateAdminPanel();
+            });
+        }
+        function mobileHistCount() { return localState.history.length; }
+        setupFirebaseListeners();
+
+        // ⏭️ UPDATE HUD QUEUE TEXT FOR NEXT DZIESMA
+        function updateNextTrackHudPreview() {
+            const hud = document.getElementById('next-track-preview-hud');
+            if(!hud) return;
+            if (localState.songs.length <= 1) { hud.innerText = "Nākamā: Saraksta gals"; return; }
+            let nextIndex = activeSongIndex + 1;
+            if (nextIndex >= localState.songs.length) nextIndex = 0;
+            const nextSong = localState.songs[nextIndex];
+            if (nextSong) {
+                hud.innerText = `Nākamā: ${nextSong.title} - ${nextSong.artist}`;
+            }
+        }
+
+        // ---- TIMER AND FORMATTING MANAGEMENT ----
+        function formatTime(secs) {
+            if(isNaN(secs)) return "0:00";
+            const m = Math.floor(secs / 60); const s = Math.floor(secs % 60);
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+        function handleTrackSliderInput() { isUserSeekingTrack = true; }
+        function handleTrackSliderChange() { isUserSeekingTrack = false; realAudio.currentTime = trackProgressBar.value; }
+        function handleSearch() { currentSearchQuery = document.getElementById('search-input').value.toLowerCase().trim(); populateTrackLibrary(); }
+        function toggleRepeatMode() { repeatModeActive = !repeatModeActive; document.getElementById('repeat-btn').classList.toggle('active', repeatModeActive); showToastNotification(repeatModeActive ? "Repeat Ieslēgts" : "Repeat Izslēgts", "🔁"); }
+        
+        realAudio.addEventListener('loadedmetadata', () => {
+            trackProgressBar.max = Math.floor(realAudio.duration);
+            trackTotalDurationEl.textContent = formatTime(realAudio.duration);
+        });
+        realAudio.addEventListener('timeupdate', () => {
+            if (!isUserSeekingTrack) trackProgressBar.value = Math.floor(realAudio.currentTime);
+            trackCurrentTimeEl.textContent = formatTime(realAudio.currentTime);
+        });
+        realAudio.addEventListener('ended', () => { if (repeatModeActive) { realAudio.currentTime = 0; playSong(); } else { playNextSong(); } });
+
+        function updatePinDots() {
+            const dots = document.getElementById('pin-dots').children;
+            for (let i = 0; i < dots.length; i++) {
+                if (i < enteredPin.length) dots[i].classList.add('filled');
+                else dots[i].classList.remove('filled');
+            }
+        }
+
+        function pressPinKey(num) {
+            if (enteredPin.length < 6) {
+                enteredPin += num; updatePinDots();
+                if (enteredPin.length === 6) setTimeout(processLogin, 300);
+            }
+        }
+        function deletePinKey() { enteredPin = enteredPin.slice(0, -1); updatePinDots(); }
+        function clearPin() { enteredPin = ""; updatePinDots(); }
+
+        // ---- SESSIONS AND AUTH PROCESS ----
+        function processLogin() {
+            const loginData = pinDatabase[enteredPin];
+            if (loginData) {
+                currentUser = loginData.user; currentUserRole = loginData.role;
+                if (localState.appBlocked && currentUserRole !== 'admin') {
+                    showAppBlockedOverlay(localState.blockMessage); return;
+                }
+                const uProfile = localState.userProfiles[currentUser] || { name: (currentUser === 'ardeens' ? "ardeens" : "Oto Auto"), avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256" };
+                document.getElementById('user-pic-intro').src = uProfile.avatar;
+                document.getElementById('user-name-intro').innerText = uProfile.name;
+                triggerScreenSwitch('intro-screen');
+
+                if (currentUserRole !== 'admin') {
+                    db.collection("logs").doc(currentUser).set({
+                        lastOnline: new Date().toLocaleString('lv-LV'),
+                        lastHeartbeat: Date.now(),
+                        currentListen: "Nekas", sessionDuration: "0 sek.", lastCasino: "Nav spēlēts", pinCode: enteredPin
+                    }, { merge: true });
+                    updateUserActivityTimestamp();
+                }
+
+                setTimeout(() => {
+                    populateHeaderData(); populateTrackLibrary(); populateNewsFeed(); populateAdminPanel(); resetCasinoToDefaultState();
+                    if (currentUserRole === 'admin') {
+                        document.getElementById('tab-btn-admin').style.display = 'flex'; switchNavTab('admin-screen');
+                    } else {
+                        document.getElementById('tab-btn-admin').style.display = 'none'; switchNavTab('player-screen');
+                    }
+                    document.getElementById('bottom-navigation').style.display = 'flex';
+                    startSessionOnlineTracker(); clearPin();
+                }, 2400);
+            } else { showToastNotification("⚠️ Nepareizs pieejas kods!"); clearPin(); }
+        }
+
+        function logOutUser() {
+            stopSessionOnlineTracker(); pauseSong(); currentUser = null; currentUserRole = null;
+            document.getElementById('bottom-navigation').style.display = 'none';
+            document.getElementById('block-screen').className = "block-screen-overlay hidden";
+            triggerScreenSwitch('login-screen'); clearPin();
+        }
+
+        function triggerScreenSwitch(screenId) {
+            document.querySelectorAll('.screen').forEach(scr => scr.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active'); currentActiveScreen = screenId;
+        }
+
+        function switchNavTab(screenId) {
+            if (localState.appBlocked && currentUserRole !== 'admin') { showAppBlockedOverlay(localState.blockMessage); return; }
+            if (screenId === 'casino-screen' && localState.casinoBlocked && currentUserRole !== 'admin') {
+                showToastNotification(`🎰 Kazino ir slēgts: ${localState.casinoBlockMessage}`); return;
+            }
+            triggerScreenSwitch(screenId);
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            if (screenId === 'player-screen') document.getElementById('tab-btn-player').classList.add('active');
+            if (screenId === 'casino-screen') { document.getElementById('tab-btn-casino').classList.add('active'); resetCasinoToDefaultState(); }
+            if (screenId === 'history-screen') {
+                document.getElementById('tab-btn-history').classList.add('active');
+                document.getElementById('history-unread-dot').style.display = 'none';
+            }
+            if (screenId === 'news-screen') {
+                document.getElementById('tab-btn-news').classList.add('active');
+                document.getElementById('news-unread-dot').style.display = 'none';
+            }
+            if (screenId === 'admin-screen') document.getElementById('tab-btn-admin').classList.add('active');
+        }
+
+        function populateHeaderData() {
+            const profile = localState.userProfiles[currentUser] || { points: 15, name: (currentUser === 'ardeens' ? "ardeens" : "Oto Auto"), avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256" };
+            const avatarImg = currentUserRole === 'admin' ? "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=256" : profile.avatar;
+            const fullName = currentUserRole === 'admin' ? "Cruiz Admin" : profile.name;
+            const pts = (currentUserRole === 'admin') ? 999999 : (profile.points !== undefined ? profile.points : 15);
+
+            ['header-pic', 'casino-header-pic', 'news-header-pic', 'admin-header-pic', 'history-header-pic'].forEach(h => {
+                const el = document.getElementById(h); if (el) el.src = avatarImg;
+            });
+            ['casino-header-name', 'news-header-name', 'admin-header-name', 'history-header-name'].forEach(n => {
+                const el = document.getElementById(n); if (el) el.innerText = fullName;
+            });
+            ['user-points', 'casino-user-points', 'news-user-points', 'history-user-points'].forEach(p => {
+                const el = document.getElementById(p); if (el) el.innerText = pts;
+            });
+        }
+
+        function renderUserPtsHistory() {
+            const listContainer = document.getElementById('pts-history-list'); if (!listContainer) return;
+            listContainer.innerHTML = "";
+            if (currentUserRole === 'admin') { listContainer.innerHTML = "<div style='color:#526385; text-align:center;'>Adminam nav vēstures.</div>"; return; }
+            const userHistory = localState.history.filter(h => h.username === currentUser);
+            if (userHistory.length === 0) { listContainer.innerHTML = "<div style='color:#526385; text-align:center; font-size:11px;'>Pagaidām nav neviena punkta ieraksta.</div>"; return; }
+            userHistory.forEach(h => {
+                const div = document.createElement('div'); const isPositive = h.amount >= 0;
+                div.className = `pts-history-card-item ${isPositive ? 'plus' : 'minus'}`;
+                div.innerHTML = `<span class="pts-history-item-reason">${h.reason}</span><span class="pts-history-item-val">${isPositive ? '+' : ''}${h.amount} PTS</span>`;
+                listContainer.appendChild(div);
+            });
+        }
+
+        function startSessionOnlineTracker() {
+            if (currentUserRole === 'admin') return; secondsListened = 0;
+            if (playTrackerTimer) clearInterval(playTrackerTimer);
+            playTrackerTimer = setInterval(() => {
+                db.collection("logs").doc(currentUser).update({ lastHeartbeat: Date.now() }).catch(e => {});
+                if (isAudioPlaying) {
+                    secondsListened++;
+                    db.collection("logs").doc(currentUser).update({ sessionDuration: secondsListened + " sek." }).catch(e => {});
+                }
+            }, 1000);
+        }
+        function stopSessionOnlineTracker() { if (playTrackerTimer) clearInterval(playTrackerTimer); }
+
+        // ---- MUSIC CONTROLS ENGINE ----
+        function populateTrackLibrary() {
+            const container = document.getElementById('tracks-container'); container.innerHTML = "";
+            const profile = localState.userProfiles[currentUser] || { points: 15, favorites: [] };
+            const userPoints = (currentUserRole === 'admin') ? 999999 : (profile.points !== undefined ? profile.points : 15);
+            const favs = profile.favorites || [];
+
+            let songsToRender = [...localState.songs].sort((a, b) => {
+                const aFav = favs.includes(a.id) ? 1 : 0; const bFav = favs.includes(b.id) ? 1 : 0;
+                if (aFav !== bFav) return bFav - aFav; return b.price - a.price; 
+            });
+            if (currentSearchQuery) songsToRender = songsToRender.filter(s => s.title.toLowerCase().includes(currentSearchQuery) || s.artist.toLowerCase().includes(currentSearchQuery));
+            if (songsToRender.length === 0) { container.innerHTML = `<div style="text-align:center; padding:20px; color:#526385; font-size:12px;">Neviena dziesma netika atrasta.</div>`; return; }
+
+            songsToRender.forEach((song) => {
+                const isLocked = userPoints < song.price; const isFav = favs.includes(song.id);
+                const isActive = localState.songs[activeSongIndex]?.id === song.id;
+                const trk = document.createElement('div'); trk.className = `track-item ${isLocked ? 'locked' : ''} ${isActive ? 'active' : ''}`;
+                trk.innerHTML = `
+                    <div class="track-info" onclick="selectSongToPlay(${localState.songs.findIndex(s => s.id === song.id)}, ${isLocked}, ${song.available}, '${song.blockReason}')">
+                        ${currentUserRole !== 'admin' ? `<span class="fav-star ${isFav ? 'active' : ''}" onclick="toggleFavorite('${song.id}', event)">★</span>` : `<span style="color:#526385; font-size:12px;">•</span>`}
+                        <div class="track-meta-details">
+                            <span class="track-title-text">${song.title}</span><span class="track-artist-text">${song.artist}</span>
+                        </div>
+                    </div>
+                    <div class="track-actions">
+                        ${!song.available ? `<span class="track-status-text">Liegts: ${song.blockReason}</span>` : (isLocked ? `<span class="track-cost-badge">🔒 ${song.price} PTS</span>` : `<span class="track-cost-badge unlocked">✓ Pieejams</span>`)}
+                    </div>`;
+                container.appendChild(trk);
+            });
+        }
+
+        function toggleFavorite(songId, event) {
+            event.stopPropagation(); if (currentUserRole === 'admin') return;
+            const profile = localState.userProfiles[currentUser] || { favorites: [] };
+            let favs = profile.favorites ? [...profile.favorites] : []; const index = favs.indexOf(songId);
+            if (index > -1) favs.splice(index, 1); else favs.push(songId);
+            db.collection("profiles").doc(currentUser).set({ favorites: favs }, { merge: true });
+        }
+
+        function selectSongToPlay(index, isLocked, isAvailable, blockReason) {
+            if (index < 0 || index >= localState.songs.length) return;
+            if (!isAvailable) { showToastNotification(`⚠️ Dziesma bloķēta: ${blockReason}`); return; }
+            if (isLocked && currentUserRole !== 'admin') { showToastNotification("🔒 Tev nepietiek punktu, lai atskaņotu šo dziesmu!"); return; }
+            initWebAudio(); activeSongIndex = index; const song = localState.songs[activeSongIndex];
+            document.getElementById('player-title').innerText = song.title; document.getElementById('player-artist').innerText = song.artist;
+            document.getElementById('player-vinyl-cover').style.backgroundImage = song.image ? `url('${song.image}')` : "url('https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=256')";
+            realAudio.src = song.audioUrl || "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"; 
+            if (currentUserRole !== 'admin') db.collection("logs").doc(currentUser).update({ currentListen: `"${song.title}" - ${song.artist}` });
+            playSong(); populateTrackLibrary(); updateNextTrackHudPreview();
+        }
+
+        function togglePlayState() {
+            if (localState.songs.length === 0) { showToastNotification("Datubāzē nav ielādēta neviena dziesma."); return; }
+            initWebAudio(); if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            if (isAudioPlaying) pauseSong();
+            else {
+                const song = localState.songs[activeSongIndex];
+                if (song) {
+                    const profile = localState.userProfiles[currentUser] || { points: 15 };
+                    selectSongToPlay(activeSongIndex, (profile.points < song.price), song.available, song.blockReason);
+                }
+            }
+        }
+        function playSong() { isAudioPlaying = true; document.getElementById('play-btn').innerText = "⏸"; document.getElementById('player-vinyl').classList.add('playing'); realAudio.play().catch(e=>{}); }
+        function pauseSong() { isAudioPlaying = false; document.getElementById('play-btn').innerText = "▶"; document.getElementById('player-vinyl').classList.remove('playing'); realAudio.pause(); }
+        function playNextSong() {
+            if (localState.songs.length === 0) return; let nxt = activeSongIndex + 1; if (nxt >= localState.songs.length) nxt = 0;
+            const song = localState.songs[nxt]; const profile = localState.userProfiles[currentUser] || { points: 15 };
+            selectSongToPlay(nxt, (profile.points < song.price), song.available, song.blockReason);
+        }
+        function playPrevSong() {
+            if (localState.songs.length === 0) return; let prv = activeSongIndex - 1; if (prv < 0) prv = localState.songs.length - 1;
+            const song = localState.songs[prv]; const profile = localState.userProfiles[currentUser] || { points: 15 };
+            selectSongToPlay(prv, (profile.points < song.price), song.available, song.blockReason);
+        }
+
+        function updateBass(val) {
+            if (cruizAiAudioMode !== 'off') return;
+            const level = parseInt(val); let text = ""; let color = ""; const warningAlert = document.getElementById('bass-warning-alert');
+            if (level <= 4) { text = `Lvl ${level}`; color = "var(--neon-green)"; warningAlert.classList.add('hidden'); }
+            else if (level <= 7) { text = `Lvl ${level} (!)`; color = "var(--neon-orange)"; warningAlert.classList.add('hidden'); }
+            else { text = `Lvl ${level} (TRAKS!)`; color = "var(--neon-pink)"; warningAlert.classList.remove('hidden'); }
+            const bassValEl = document.getElementById('bass-val'); bassValEl.innerText = text; bassValEl.style.color = color;
+            if (bassFilter) { const targetDb = (level - 1) * 3.5; bassFilter.gain.setValueAtTime(targetDb, audioCtx.currentTime); }
+        }
+
+        function updateTreble(val) {
+            const level = parseInt(val); document.getElementById('treble-val').innerText = `${level} dB`;
+            if (trebleFilter) { trebleFilter.gain.setValueAtTime(level, audioCtx.currentTime); }
+        }
+
+        function updateVolume(val) { document.getElementById('vol-val').innerText = `${val}%`; realAudio.volume = val / 100; }
+
+        // ---- CLUB NEWS ENGINE ----
+        function populateNewsFeed() {
+            const container = document.getElementById('news-container'); container.innerHTML = "";
+            if (localState.news.length === 0) { container.innerHTML = `<div class="news-card" style="text-align:center; color:#526385;">Nav neviena jaunuma pagaidām.</div>`; return; }
+            localState.news.forEach(n => {
+                const card = document.createElement('div'); card.className = 'news-card';
+                const adminToolsHtml = (currentUser && currentUserRole === 'admin') ? `<div class="news-admin-actions"><button class="btn-news-action" onclick="handleEditNews('${n.id}', '${n.title}', '${n.text}')">✏️</button><button class="btn-news-action btn-delete" onclick="handleDeleteNews('${n.id}')">🗑️</button></div>` : '';
+                let claimBoxHtml = '';
+                if (n.giftPts && n.giftPts > 0 && currentUserRole !== 'admin') {
+                    const claimedBy = n.claimedBy || []; const hasClaimed = claimedBy.includes(currentUser);
+                    claimBoxHtml = `<div class="gift-claim-box"><span style="font-size: 11px; color:#fff; font-weight:bold;">🎁 Svētku dāvana: ${n.giftPts} PTS!</span><button class="btn-claim" id="claim-btn-${n.id}" ${hasClaimed ? 'disabled' : ''} onclick="handleClaimGift('${n.id}', ${n.giftPts})">${hasClaimed ? 'Saņemts ✓' : 'Claim'}</button></div>`;
+                }
+                card.innerHTML = `<span class="news-time">${n.timestamp}</span><span class="news-author-tag">✍️ Autors: ${n.author || 'Cruiz Administrators'}</span><div class="news-headline">${n.title}</div>${adminToolsHtml}<div class="news-body">${n.text}</div>${n.image ? `<img class="news-img" src="${n.image}">` : ''}${claimBoxHtml}`;
+                container.appendChild(card);
+            });
+        }
+
+        function handleClaimGift(newsId, ptsAmount) {
+            if (currentUserRole === 'admin') return; const ref = db.collection("news").doc(newsId);
+            db.runTransaction((transaction) => {
+                return transaction.get(ref).then((doc) => {
+                    if (!doc.exists) return; let claimedBy = doc.data().claimedBy || []; if (claimedBy.includes(currentUser)) throw "Jau saņemts!";
+                    claimedBy.push(currentUser); transaction.update(ref, { claimedBy: claimedBy });
+                    const profile = localState.userProfiles[currentUser] || { points: 15 };
+                    transaction.set(db.collection("profiles").doc(currentUser), { points: (profile.points || 15) + ptsAmount }, { merge: true });
+                    db.collection("history").add({ username: currentUser, amount: ptsAmount, reason: `Dāvana no ziņas: "${doc.data().title}"`, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+                });
+            }).then(() => showToastNotification(`Apsveicam! Tu saņēmi +${ptsAmount} PTS!`, "🎁")).catch(err => showToastNotification(err));
+        }
+
+        function handleDeleteNews(newsId) { if (confirm("Dzēst ziņu?")) db.collection("news").doc(newsId).delete().then(() => showToastNotification("Izdzēsts!")); }
+        function handleEditNews(newsId, oldT, oldM) {
+            const t = prompt("Virsraksts:", oldT); if (t === null) return; const m = prompt("Saturs:", oldM); if (m === null) return;
+            db.collection("news").doc(newsId).update({ title: t, text: m }).then(() => showToastNotification("Atjaunots!"));
+        }
+
+        // ---- ADVANCED ADMIN DASHBOARD ----
+        function populateAdminPanel() {
+            if (!currentUser || currentUserRole !== 'admin') return;
+            if(document.getElementById('block-app-toggle')) document.getElementById('block-app-toggle').checked = localState.appBlocked;
+            if(document.getElementById('admin-app-version')) document.getElementById('admin-app-version').value = localState.version;
+
+            const songListContainer = document.getElementById('admin-song-manager-list'); if (songListContainer) { songListContainer.innerHTML = "";
+            localState.songs.forEach(song => {
+                const item = document.createElement('div'); item.className = 'admin-control-item';
+                item.innerHTML = `
+                    <div class="admin-track-manager-cell"><strong style="color:#fff; font-size:13px; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${song.title}</strong></div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <input type="number" class="admin-pts-input" id="pts-input-${song.id}" value="${song.price}">
+                        <button class="btn-news-action" style="background:var(--neon-green); color:#000;" onclick="saveSongPriceFromAdmin('${song.id}')">Ok</button>
+                        <label style="color:#fff; font-size:11px; display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" ${song.available ? 'checked' : ''} onchange="toggleAdminSongAvailability('${song.id}', this.checked)">Pieejama</label>
+                        <button class="btn-news-action btn-delete" onclick="handleAdminDeleteSong('${song.id}')">🗑️</button>
+                    </div>`;
+                songListContainer.appendChild(item);
+            }); }
+
+            const userTrackerContainer = document.getElementById('admin-user-tracker'); if (userTrackerContainer) { userTrackerContainer.innerHTML = "";
+            const availableUsers = ["ardeens", "oto"];
+
+            availableUsers.forEach(u => {
+                const logData = localState.userLogs[u] || {};
+                const profile = localState.userProfiles[u] || { points: 15, name: u === 'ardeens' ? 'ardeens' : 'Oto Auto' };
+                const currentPts = profile.points !== undefined ? profile.points : 15;
+                
+                let foundPinCode = "Nav reģistrēts";
+                for (const [code, meta] of Object.entries(pinDatabase)) {
+                    if (meta.user === u) { foundPinCode = code; break; }
+                }
+
+                let isOnline = false;
+                if (logData.lastHeartbeat) { isOnline = (Date.now() - logData.lastHeartbeat) < 12000; }
+
+                let favTracksHtml = "";
+                if (profile.favorites && profile.favorites.length > 0) {
+                    profile.favorites.forEach(fId => {
+                        const matchSong = localState.songs.find(s => s.id === fId);
+                        if(matchSong) favTracksHtml += `<span class="admin-fav-track-bullet">⭐ ${matchSong.title}</span>`;
+                    });
+                } else { favTracksHtml = "<span style='color:#526385;'>Nav pievienotu dziesmu</span>"; }
+
+                const userHistory = localState.history.filter(h => h.username === u);
+                let historyEditHtml = '';
+                userHistory.forEach(h => {
+                    historyEditHtml += `<div style="display:flex; justify-content:space-between; font-size:10px; color:#a0aec0; margin-bottom: 4px;"><span>${h.reason} (${h.amount} PTS)</span><span style="color:var(--neon-pink); cursor:pointer;" onclick="deleteHistoryItem('${h.id}')">✕</span></div>`;
+                });
+
+                const trackerCard = document.createElement('div'); trackerCard.className = 'admin-card';
+                trackerCard.innerHTML = `
+                    <div class="admin-user-head">
+                        <span class="admin-user-title">
+                            <span class="status-bulb ${isOnline ? 'online' : 'offline'}"></span>
+                            ${profile.name} (${u})
+                        </span>
+                        <div style="color: var(--neon-orange); font-weight:800; font-size:14px;">${currentPts} PTS</div>
+                    </div>
+                    <!-- UNIQUE SECURE PIN EXPOSURE LAYER FOR OWNER MONITORING -->
+                    <div style="background: rgba(255, 94, 0, 0.08); border: 1px dashed rgba(255, 94, 0, 0.25); padding: 6px 10px; border-radius: 8px; font-size:11px; margin-bottom: 10px; color: #ffaa00;">
+                        🔑 Unikālais lietotāja Login kods: <strong style="color: #fff; font-family: monospace; font-size:12px; letter-spacing:1px;">${foundPinCode}</strong>
+                    </div>
+                    
+                    <div style="color:#a0aec0; font-size:11px; line-height:1.5; margin-bottom:12px;">
+                        • Pēdējā darbība: <span style="color:#fff;">${logData.lastOnline || 'Nekad'}</span><br>
+                        • Klausās: <span style="color:#fff;">${logData.currentListen || 'Nekas'}</span><br>
+                        • Ilgums: <span style="color:var(--neon-blue); font-weight:bold;">${logData.sessionDuration || '0 sek.'}</span><br>
+                        • Kazino logs: <span style="color:var(--neon-pink);">${logData.lastCasino || 'Nav spēlēts'}</span>
+                    </div>
+
+                    <div style="font-weight:bold; font-size:10px; color:#526385; margin-bottom:4px; text-transform:uppercase;">Mīļākās Dziesmas (Favorites):</div>
+                    <div class="admin-fav-list-holder" style="margin-bottom:12px;">${favTracksHtml}</div>
+
+                    <div style="font-weight:bold; font-size:11px; color:#526385; margin-bottom:8px;">Koriģēt Punktus (PTS):</div>
+                    <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                        <input type="number" class="admin-input" id="custom-adjust-amount-${u}" value="10" style="padding: 8px; font-size:12px; width:70px; margin:0; background:#000; border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:8px;">
+                        <select class="admin-select" id="custom-adjust-reason-${u}" style="padding: 8px; font-size:11px; flex: 1;">
+                            <option value="user_bought">Lietotājs nopirka, tāpēc viņam iedeva</option>
+                            <option value="no_info">Nav informācijas</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+                        <button class="btn-primary" style="padding: 8px; background: rgba(255, 0, 127, 0.15); color: var(--neon-pink); border: 1px solid rgba(255, 0, 127, 0.3); line-height:1;" onclick="adjustUserPtsCustom('${u}', -1)">Noņemt PTS (-)</button>
+                        <button class="btn-primary" style="padding: 8px; background: rgba(57, 255, 20, 0.15); color: var(--neon-green); border: 1px solid rgba(57, 255, 20, 0.3); line-height:1;" onclick="adjustUserPtsCustom('${u}', 1)">Pievienot PTS (+)</button>
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <div style="font-weight:bold; font-size:11px; color:#526385;">PTS Transakciju Labošana:</div>
+                        <button type="button" style="background:none; border:none; color:var(--neon-pink); font-size:10px; font-weight:bold; cursor:pointer;" onclick="wipeAllUserHistoryAdmin('${u}')">⚠️ Dzēst visu vēsturi</button>
+                    </div>
+                    <div class="admin-history-edit-box" style="max-height:100px; overflow-y:auto;">${historyEditHtml || '<div style="color:#526385; font-size:10px;">Nav transakciju.</div>'}</div>`;
+                userTrackerContainer.appendChild(trackerCard);
+            }); }
+
+            const selectEl = document.getElementById('admin-profile-select');
+            if (selectEl && !document.getElementById('admin-profile-name').value) { loadProfileToEdit(selectEl.value); }
+        }
+
+        function saveSongPriceFromAdmin(songId) {
+            const newPrice = parseInt(document.getElementById(`pts-input-${songId}`).value);
+            if(isNaN(newPrice) || newPrice < 0) return;
+            db.collection("songs").doc(songId).update({ price: newPrice }).then(() => showToastNotification("Likme veiksmīgi atjaunināta mākonī!", "✓"));
+        }
+
+        function wipeAllUserHistoryAdmin(username) {
+            if(confirm(`Vai tiešām vēlies dzēst visu vēsturi lietotājam ${username}?`)) {
+                db.collection("history").where("username", "==", username).get().then((snapshot) => {
+                    let batch = db.batch(); snapshot.forEach((doc) => { batch.delete(doc.ref); });
+                    batch.commit().then(() => { showToastNotification(`Vēsture pilnībā iztīrīta!`, "🗑️"); });
+                });
+            }
+        }
+
+        function handleAdminSeasonalChange(val) { db.collection("settings").doc("app_state").set({ seasonalEffect: val }, { merge: true }); }
+        function loadProfileToEdit(userId) {
+            const profile = localState.userProfiles[userId] || { name: "", avatar: "" };
+            document.getElementById('admin-profile-name').value = profile.name || "";
+            document.getElementById('admin-profile-avatar').value = profile.avatar || "";
+        }
+        function saveUserProfileAdmin() {
+            const id = document.getElementById('admin-profile-select').value;
+            const n = document.getElementById('admin-profile-name').value.trim(); const a = document.getElementById('admin-profile-avatar').value.trim();
+            if(!n || !a) return;
+            db.collection("profiles").doc(id).set({ name: n, avatar: a }, { merge: true }).then(() => showToastNotification("Profils saglabāts!", "👤"));
+        }
+
+        var myWidget = cloudinary.createUploadWidget({ cloudName: 'cruiz-cloud', uploadPreset: 'cruiz_preset'}, (error, result) => { 
+                if (!error && result && result.event === "success") { document.getElementById('new-song-audio-url').value = result.info.secure_url; }
+            }
+        );
+        function openCloudinaryWidget() { myWidget.open(); }
+
+        function adjustUserPtsCustom(username, mult) {
+            const amt = parseInt(document.getElementById(`custom-adjust-amount-${username}`).value);
+            const reasonType = document.getElementById(`custom-adjust-reason-${username}`).value;
+            if(isNaN(amt) || amt <= 0) return;
+            const diff = amt * mult; const profile = localState.userProfiles[username] || { points: 15 };
+            let target = (profile.points || 0) + diff; if (target < 0) target = 0;
+            const rText = (reasonType === "user_bought") ? "Lietotājs veica pirkumu" : "Nav informācijas";
+            db.collection("profiles").doc(username).set({ points: target }, { merge: true }).then(() => {
+                db.collection("history").add({ username: username, amount: diff, reason: rText, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+                showToastNotification(`Punkti mainīti!`, "⚖️");
+            });
+        }
+
+        function deleteHistoryItem(id) { if(confirm("Dzēst transakciju?")) db.collection("history").doc(id).delete().then(() => showToastNotification("Izdzēsts!")); }
+        function handleAdminVersionChange(val) { db.collection("settings").doc("app_state").set({ version: val }, { merge: true }); }
+        function handleAdminAppBlock() { db.collection("settings").doc("app_state").set({ appBlocked: document.getElementById('block-app-toggle').checked }, { merge: true }); }
+        function handleBlockReasonSelect(val) {
+            let msg = val; if (val === "custom") msg = document.getElementById('custom-block-msg').value;
+            db.collection("settings").doc("app_state").set({ blockMessage: msg }, { merge: true });
+        }
+        function handleCustomBlockMsgInput(val) { db.collection("settings").doc("app_state").set({ blockMessage: val }, { merge: true }); }
+        function handleAdminCasinoBlock() { db.collection("settings").doc("app_state").set({ casinoBlocked: document.getElementById('block-casino-toggle').checked }, { merge: true }); }
+        function handleCasinoBlockReasonSelect(val) {
+            let msg = val; if (val === "custom") msg = document.getElementById('custom-casino-block-msg').value;
+            db.collection("settings").doc("app_state").set({ casinoBlockMessage: msg }, { merge: true });
+        }
+        function handleCustomCasinoBlockMsgInput(val) { db.collection("settings").doc("app_state").set({ casinoBlockMessage: val }, { merge: true }); }
+
+        function handleAdminDeleteSong(id) { if(confirm("Dzēst dziesmu?")) db.collection("songs").doc(id).delete(); }
+        function handleAdminAddSong() {
+            const t = document.getElementById('new-song-title').value.trim(); const a = document.getElementById('new-song-artist').value.trim();
+            const img = document.getElementById('new-song-image').value.trim(); const url = document.getElementById('new-song-audio-url').value.trim();
+            const cost = parseInt(document.getElementById('new-song-cost').value);
+            if(!t || !a || isNaN(cost) || !url) return;
+            db.collection("songs").add({ title: t, artist: a, image: img||null, audioUrl: url, price: cost, available: true, blockReason: "dziesma nav pieejama" }).then(() => {
+                document.getElementById('new-song-title').value = ""; document.getElementById('new-song-artist').value = "";
+                document.getElementById('new-song-image').value = ""; document.getElementById('new-song-audio-url').value = "";
+                document.getElementById('new-song-cost').value = ""; showToastNotification("Pievienots!");
+            });
+        }
+        function toggleAdminSongAvailability(id, chk) { db.collection("songs").doc(id).update({ available: chk, blockReason: chk ? "dziesma pieejama" : "dziesma pašlaik nav pieejama" }); }
+        function toggleGiftInput(chk) { document.getElementById('gift-pts-amount-container').className = chk ? "admin-input-group" : "admin-input-group hidden"; }
+        
+        function handleAdminAddNews() {
+            const author = document.getElementById('new-news-author').value;
+            const t = document.getElementById('new-news-title').value.trim(); const txt = document.getElementById('new-news-text').value.trim();
+            const img = document.getElementById('new-news-image').value.trim(); const giftChk = document.getElementById('news-add-gift').checked;
+            const pts = parseInt(document.getElementById('news-gift-pts').value);
+            if(!t || !txt) return;
+            db.collection("news").add({ author: author, title: t, text: txt, image: img||null, timestamp: new Date().toLocaleString('lv-LV'), giftPts: (giftChk && !isNaN(pts)) ? pts : 0, claimedBy: [] }).then(() => {
+                document.getElementById('new-news-title').value = ""; document.getElementById('new-news-text').value = ""; document.getElementById('new-news-image').value = "";
+                document.getElementById('news-add-gift').checked = false; document.getElementById('news-gift-pts').value = "";
+                document.getElementById('gift-pts-amount-container').className = "admin-input-group hidden"; showToastNotification("Publicēts!");
+            });
+        }
+
+        function showAppBlockedOverlay(msg) { document.getElementById('block-message').innerText = msg; document.getElementById('block-screen').classList.remove('hidden'); }
+        
+        function showToastNotification(t, i = "⚠️") {
+            const toast = document.getElementById('toast-notif'); document.getElementById('toast-icon').innerText = i; document.getElementById('toast-text').innerText = t;
+            toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3500);
+        }
+
+        setInterval(() => { if(currentUser && currentUserRole !== 'admin') updateUserActivityTimestamp(); }, 5000);
+    </script>
+</body>
+</html>
